@@ -108,3 +108,60 @@ This guide details the complete mechanical fabrication, tendon-driven actuation,
    - Typical stroke required per digit: 18 - 25 mm of tendon travel.
    - On a 12mm radius winch horn, this corresponds to approximately ^\circ - 120^\circ$ of servo rotation.
 3. **Opposition Clearance**: Confirm that during opposition, the thumb clears the palm surface by 8-12 mm before contacting the index or middle fingertips.
+
+---
+
+# SECTION 7: 27-DoF BIOMIMETIC HYDRAULIC MUSCULOSKELETAL SPECIFICATION OVERHAUL
+
+## 7.1 Overview of 27-DoF Anatomical Kinematic Breakdown
+To achieve total anatomical parity with the human musculoskeletal system, the hand is elevated from single-cable tendon flexion to a full 27-DoF dual-acting antagonistic architecture:
+
+1. **Digits II–V (Index, Middle, Ring, Pinky) – 16 DoF Total (4 DoF / Finger)**:
+   - **MCP Joint (2 DoF)**: Metacarpophalangeal Flexion/Extension (zsh^\circ$ to ^\circ$) + Lateral Abduction/Adduction (569X15^\circ$ to 0^\circ$).
+   - **PIP Joint (1 DoF)**: Proximal Interphalangeal Flexion/Extension (zsh^\circ$ to ^\circ$).
+   - **DIP Joint (1 DoF)**: Distal Interphalangeal Flexion/Extension (zsh^\circ$ to ^\circ$).
+2. **Digit I (Thumb) – 5 DoF Total**:
+   - **CMC Joint (2 DoF)**: Trapeziometacarpal Saddle articulation with palmar abduction/adduction (zsh^\circ$ to ^\circ$) and true opposition/circumduction rotation (569X30^\circ$ to 0^\circ$).
+   - **MCP Joint (2 DoF)**: Condyloid articulation featuring flexion/extension (zsh^\circ$ to ^\circ$) and supplementary radial/ulnar abduction (569X10^\circ$ to 0^\circ$).
+   - **IP Joint (1 DoF)**: Interphalangeal terminal flexion/extension (zsh^\circ$ to ^\circ$).
+3. **Flexible Palmar Arch (2 DoF Total)**:
+   - **Ulnar Palmar Cupping (1 DoF)**: Articulation of the 4th & 5th metacarpal rays allowing the palm to collapse into a concave cup during spherical/power grasping.
+   - **Thenar Eminence Translation (1 DoF)**: Adaptive compliance of the 1st metacarpal base along the transverse carpal arch.
+4. **Multi-Axis Wrist & Forearm (4 DoF Total)**:
+   - **Flexion / Extension (1 DoF)**: 569X70^\circ$ to 0^\circ$ via antagonistic longitudinal hydraulic pairs.
+   - **Radial / Ulnar Deviation (1 DoF)**: 569X20^\circ$ to 0^\circ$ side-to-side carpal deviation.
+   - **Forearm Pronation / Supination (2 DoF / Coupled Rotational Axes)**: 569X85^\circ$ to 0^\circ$ full axial rotation.
+
+---
+
+## 7.2 McKibben Hydraulic Artificial Muscle Fibers (36 Units)
+- **Construction**:
+  - Inner elastomeric silicone/viton micro-bladder (wall thickness zsh.4\text{ mm}$).
+  - Outer braided Kevlar / ultra-high molecular weight polyethylene (UHMWPE) helical sleeve.
+  - Active braided diameter: $\varnothing 4.0\text{ mm}$ (unpressurized) expands radially to $\varnothing 6.5\text{ mm}$ upon fluid injection.
+- **Performance Characteristics**:
+  - Unit weight: $\sim 3.0\text{ g}$ per muscle unit.
+  - Linear tensile force: $\sim 10\text{ N}$ (.0\text{ kgf}$) per fiber at 6-8 bar (0.6-0.8 MPa) operating hydraulic pressure.
+  - Response time: $< 45\text{ ms}$ for 15% longitudinal stroke contraction.
+  - Mechanical compliance: Intrinsic viscoelastic fluid damping eliminates gearbox backlash, prevents shock transmission to bone structures, and delivers natural biomimetic back-drivability.
+
+---
+
+## 7.3 Carbon-Fiber Composite Skeletal Structures & Ligament Tethers
+1. **Bone Matrix**: Short-fiber carbon-fiber reinforced PEEK / SLA composite resin providing high stiffness-to-weight ratio ( > 18\text{ GPa}$, density $\sim 1.3\text{ g/cm}^3$).
+2. **Ligamentous Capsule Suspension**:
+   - Rather than rigid sliding pins alone, joint hinges incorporate cross-woven UHMWPE ligament tethers replicating the volar plate, collateral ligaments, and flexor retinaculum.
+   - Provides multi-axis compliance, self-centering articulation, and prevents joint subluxation under multi-directional impact loads.
+
+---
+
+## 7.4 Hydraulic Manifold, Valve Subsystem & Neural Control
+1. **Electro-Hydraulic Micro-Valve Array**:
+   - High-speed 3/2-way piezo-actuated or micro-solenoid valves switching at up to 120 Hz.
+   - Miniature high-pressure micro-gear pump integrated into the proximal forearm housing with sealed deaerated distilled water/glycol hydraulic fluid.
+2. **Closed-Loop Proprioceptive Sensory Integration**:
+   - Piezo-resistive pressure sensors at each valve outlet monitoring instantaneous muscle fluid tension.
+   - Magnetic absolute rotary encoders (AS5600 / hall-effect) at MCP and CMC joints for angular telemetry.
+3. **Deep Neural Network (DNN) Control Pipeline**:
+   - Direct intent-to-pressure policy network bypassing conventional singular matrix inversions.
+   - Real-time vision-based hand-tracking translates human teleoperation or grasp targets directly into antagonistic chamber pressures.

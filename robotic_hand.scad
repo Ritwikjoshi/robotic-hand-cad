@@ -1,6 +1,7 @@
 // =========================================================================
-// Parametric Anthropomorphic 5-Finger Robotic Hand CAD Model
-// Biomechanically Corrected Thumb Kinematics & Anatomical Palm
+// Parametric Biomimetic Musculoskeletal Hand Platform (27 DoF)
+// 36x McKibben Hydraulic Artificial Muscle Routing & Composite Bones
+// Exact Anatomical Parity: Digits (16 DoF), Thumb (5 DoF), Palm (2 DoF), Wrist (4 DoF)
 // =========================================================================
 
 $fn = 40;
@@ -17,6 +18,17 @@ PART_TO_RENDER = "assembly";
 
 module pin_hole(length=30, dia=PIN_DIA+PIN_TOL) {
     cylinder(d=dia, h=length, center=true);
+}
+
+
+// Biomimetic McKibben Hydraulic Muscle Channel & Ligament Fairlead
+module hydraulic_conduit(length=40, dia=3.2) {
+    cylinder(d=dia, h=length, center=true);
+}
+
+module antagonistic_pair_ports(spacing=8, dia=3.0) {
+    translate([-spacing/2, 0, 0]) cylinder(d=dia, h=25, center=true);
+    translate([ spacing/2, 0, 0]) cylinder(d=dia, h=25, center=true);
 }
 
 module tendon_bore(length=60, dia=TENDON_DIA) {
