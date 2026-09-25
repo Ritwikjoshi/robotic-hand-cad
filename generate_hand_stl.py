@@ -387,7 +387,8 @@ def assemble_hand():
 
     components = [palm]
 
-    print("[4/5] Assembling 4 Finger Digits...")
+    print("[4/5] Exporting & Assembling All 4 Finger Digits...")
+    digit_names = ["index", "middle", "ring", "pinky"]
     scales = [0.90, 1.00, 0.92, 0.78]
     x_positions = [-23.0, -8.0, 8.0, 23.0]
     knuckle_y = [PALM_L - 2.5, PALM_L, PALM_L - 1.2, PALM_L - 3.8]
@@ -398,33 +399,50 @@ def assemble_hand():
     flex_dip = [0.25, 0.22, 0.25, 0.28]
 
     for i in range(4):
+        dname = digit_names[i]
         s = scales[i]
         p = generate_proximal_phalanx(length=38.0*s, width=15.0*s, height=13.0*s)
         ip = generate_intermediate_phalanx(length=28.0*s, width=13.0*s, height=11.0*s)
         dp = generate_distal_phalanx(length=24.0*s, width=12.0*s, height=10.0*s)
 
-        dp.apply_transform(trimesh.transformations.rotation_matrix(flex_dip[i], [1, 0, 0]))
-        dp.apply_translation([0, 28.0*s, 0])
+        # Export individual, printable, cleanly scaled STL parts
+        p.export(os.path.join(STL_DIR, f"{dname}_proximal.stl"))
+        ip.export(os.path.join(STL_DIR, f"{dname}_intermediate.stl"))
+        dp.export(os.path.join(STL_DIR, f"{dname}_distal.stl"))
 
-        finger_tip = trimesh.util.concatenate([ip, dp])
+        # Assembly copies for full hand export
+        p_c = p.copy()
+        ip_c = ip.copy()
+        dp_c = dp.copy()
+
+        dp_c.apply_transform(trimesh.transformations.rotation_matrix(flex_dip[i], [1, 0, 0]))
+        dp_c.apply_translation([0, 28.0*s, 0])
+
+        finger_tip = trimesh.util.concatenate([ip_c, dp_c])
         finger_tip.apply_transform(trimesh.transformations.rotation_matrix(flex_pip[i], [1, 0, 0]))
         finger_tip.apply_translation([0, 38.0*s, 0])
 
-        finger_full = trimesh.util.concatenate([p, finger_tip])
+        finger_full = trimesh.util.concatenate([p_c, finger_tip])
         finger_full.apply_transform(trimesh.transformations.rotation_matrix(flex_mcp[i], [1, 0, 0]))
         finger_full.apply_transform(trimesh.transformations.rotation_matrix(angles_z[i], [0, 0, 1]))
         finger_full.apply_translation([x_positions[i], knuckle_y[i] - 4.0, knuckle_z[i]])
         components.append(finger_full)
 
     # CORRECTED Opposable Thumb
-    print("[5/5] Assembling Corrected Opposable Thumb...")
+    print("[5/5] Exporting & Assembling Corrected Opposable Thumb...")
     th_p = generate_proximal_phalanx(length=32.0, width=15.0, height=13.0)
     th_d = generate_distal_phalanx(length=26.0, width=14.0, height=11.5)
 
-    th_d.apply_transform(trimesh.transformations.rotation_matrix(0.35, [1, 0, 0]))
-    th_d.apply_translation([0, 32.0, 0])
+    th_p.export(os.path.join(STL_DIR, "thumb_proximal.stl"))
+    th_d.export(os.path.join(STL_DIR, "thumb_distal.stl"))
 
-    thumb_full = trimesh.util.concatenate([th_p, th_d])
+    th_p_c = th_p.copy()
+    th_d_c = th_d.copy()
+
+    th_d_c.apply_transform(trimesh.transformations.rotation_matrix(0.35, [1, 0, 0]))
+    th_d_c.apply_translation([0, 32.0, 0])
+
+    thumb_full = trimesh.util.concatenate([th_p_c, th_d_c])
     thumb_full.apply_transform(trimesh.transformations.rotation_matrix(0.30, [1, 0, 0]))
 
     rot_cmc = trimesh.transformations.euler_matrix(THUMB_CMC_X, THUMB_CMC_Y, THUMB_CMC_Z)
