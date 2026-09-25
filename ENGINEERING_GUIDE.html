@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Biomechanical Anthropomorphic Robotic Hand - Engineering Guide</title>
+<style>
+    @page {
+        size: A4;
+        margin: 18mm 16mm 18mm 16mm;
+        @bottom-right {
+            content: "Page " counter(page);
+            font-size: 9pt;
+            color: #64748b;
+        }
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1e293b;
+        line-height: 1.55;
+        font-size: 10.5pt;
+        background: #fff;
+    }
+    .header-banner {
+        border-bottom: 3px solid #0284c7;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+    h1 {
+        color: #0f172a;
+        font-size: 20pt;
+        margin: 0 0 6px 0;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    .subtitle {
+        font-size: 11pt;
+        color: #0284c7;
+        font-weight: 600;
+        margin: 0;
+    }
+    h2 {
+        color: #0369a1;
+        font-size: 14pt;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 4px;
+        margin-top: 22px;
+        margin-bottom: 10px;
+        page-break-after: avoid;
+    }
+    h3 {
+        color: #0f172a;
+        font-size: 11.5pt;
+        margin-top: 14px;
+        margin-bottom: 6px;
+        page-break-after: avoid;
+    }
+    p, li {
+        font-size: 10pt;
+        color: #334155;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 16px 0;
+        font-size: 9.5pt;
+        page-break-inside: avoid;
+    }
+    th, td {
+        border: 1px solid #cbd5e1;
+        padding: 6px 9px;
+        text-align: left;
+    }
+    th {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        font-weight: 600;
+    }
+    tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    code {
+        background: #f1f5f9;
+        color: #0369a1;
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-family: Menlo, Monaco, Consolas, monospace;
+        font-size: 9pt;
+    }
+    pre {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 8.5pt;
+        overflow-x: auto;
+        page-break-inside: avoid;
+    }
+    ul, ol {
+        padding-left: 20px;
+        margin-top: 4px;
+        margin-bottom: 10px;
+    }
+    li {
+        margin-bottom: 3px;
+    }
+    hr {
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 18px 0;
+    }
+</style>
+</head>
+<body>
+<div class="header-banner">
+    <h1>Biomechanical Anthropomorphic Robotic Hand</h1>
+    <p class="subtitle">Complete Engineering, Actuation & Fabrication Guide (27 DoF Servo Architecture)</p>
+</div>
+
+<h2>1. Executive Summary &amp; Kinematic Architecture</h2>
+<p>This guide details the complete mechanical fabrication, tendon-driven servo actuation, and assembly procedures for the 27-DoF biomimetic anthropomorphic robotic hand.</p>
+<h3>Key Biomechanical Specifications:</h3>
+<ul>
+<li><strong>Kinematic Degrees of Freedom (DoF)</strong>:</li>
+<li><strong>Digits II-V (Index, Middle, Ring, Pinky)</strong>: 4 DOF per finger (MCP flex/ext, MCP abduction/adduction, PIP flex/ext, DIP flex/ext). Active tendon flexion with passive elastic extension.</li>
+<li><strong>Digit I (Thumb)</strong>: 5 DOF with dual-axis CMC saddle-joint motion (palmar abduction/adduction + pronation/opposition), condyloid MCP (flex/ext + ab/adduction), and terminal IP flexion.</li>
+<li><strong>Palmar Arch</strong>: 2 DOF active bowl-shaped cupping (4th &amp; 5th metacarpal flexion + thenar translation).</li>
+<li><strong>Wrist &amp; Forearm</strong>: 4 DOF multi-axis gimbal (flexion/extension, radial/ulnar deviation, and forearm pronation/supination).</li>
+<li><strong>Thumb CMC Mounting Euler Angles (Intrinsic XYZ)</strong>:</li>
+<li><b>α<sub>x</sub> = +0.85 rad (+48.7°)</b>: Palmar abduction (anterior tilt towards grasping space).</li>
+<li><b>β<sub>y</sub> = -0.35 rad (-20.1°)</b>: Pronation (orients thumb pulp medially towards digits II-IV).</li>
+<li><b>γ<sub>z</sub> = +0.50 rad (+28.6°)</b>: Radial abduction (radial clearance from the index knuckle).</li>
+<li><strong>Fasteners &amp; Pinning</strong>:</li>
+<li>Precision 3.0 mm Dowel Pins or M3 metric socket-head screws for joint hinges.</li>
+<li>Low-friction brass/PTFE sleeve bushings or direct reamed polymer bores.</li>
+</ul>
+<hr />
+<h2>2. Bill of Materials (BOM)</h2>
+<h3>A. 3D Printed / Composite Components</h3>
+<ol>
+<li><strong>Palm Chassis</strong> (<code>palm.stl</code>) – Monolithic palm chassis with carved thenar/hypothenar mounds, 4-digit metacarpal knuckle clevises, and thumb CMC saddle receptacle.</li>
+<li><strong>Forearm Servo Bay &amp; Bracket Array</strong> (<code>forearm_servo_adapter.stl</code>) – Modular high-torque micro-servo mounting rack with low-friction tendon guide conduits.</li>
+<li><strong>Digit Phalanges</strong> (Per finger: Proximal, Intermediate, Distal):</li>
+<li>Index: <code>index_proximal.stl</code>, <code>index_intermediate.stl</code>, <code>index_distal.stl</code></li>
+<li>Middle: <code>middle_proximal.stl</code>, <code>middle_intermediate.stl</code>, <code>middle_distal.stl</code></li>
+<li>Ring: <code>ring_proximal.stl</code>, <code>ring_intermediate.stl</code>, <code>ring_distal.stl</code></li>
+<li>Pinky: <code>pinky_proximal.stl</code>, <code>pinky_intermediate.stl</code>, <code>pinky_distal.stl</code></li>
+<li><strong>Thumb Phalanges</strong>:</li>
+<li><code>thumb_metacarpal.stl</code> (or proximal saddle link)</li>
+<li><code>thumb_proximal.stl</code></li>
+<li><code>thumb_distal.stl</code></li>
+</ol>
+<h3>B. Actuation &amp; Fasteners</h3>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Spec / Dimensions</th>
+<th>Quantity</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Servos</td>
+<td>High-Torque Digital Metal-Gear Micro Servos (MG90S / KST DS215MG / CLS0612W)</td>
+<td>16–20 pcs</td>
+<td>Precision tendon actuation (Digits, Thumb, Wrist)</td>
+</tr>
+<tr>
+<td>Tendon Wire</td>
+<td>UHMWPE Dyneema / Braided Spectra line (0.8 - 1.0 mm, 50-80 lb test)</td>
+<td>~6 meters</td>
+<td>Flexor &amp; abductor tendon actuation lines</td>
+</tr>
+<tr>
+<td>Extension Springs / Elastic Bands</td>
+<td>High-cycle silicone bands / 0.4mm wire dia helical torsion springs</td>
+<td>15–20 pcs</td>
+<td>Dorsal joint extension return mechanics</td>
+</tr>
+<tr>
+<td>Joint Pivot Pins</td>
+<td>M3 x 14mm / M3 x 18mm Dowel Pins or Button Head Screws</td>
+<td>~20 pcs</td>
+<td>Precision hinge pivots</td>
+</tr>
+<tr>
+<td>Locknuts / Retaining Clips</td>
+<td>M3 nylon locknuts</td>
+<td>~20 pcs</td>
+<td>Pin retention</td>
+</tr>
+<tr>
+<td>PTFE Tubing</td>
+<td>2mm OD x 1mm ID</td>
+<td>~2 meters</td>
+<td>Low-friction Bowden conduit sleeve routing</td>
+</tr>
+<tr>
+<td>Servo Driver Board</td>
+<td>PCA9685 16-Channel 12-Bit I2C PWM or 24-Ch Serial Bus Controller</td>
+<td>1–2 pcs</td>
+<td>Multichannel servo PWM control</td>
+</tr>
+<tr>
+<td>Micro Controller</td>
+<td>ESP32-S3 or Teensy 4.1 (ARM Cortex-M7)</td>
+<td>1 pc</td>
+<td>Motion kinematics &amp; trajectory execution</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Printing Recommendations &amp; Slicing Setup</h2>
+<ul>
+<li><strong>Material Selection</strong>:</li>
+<li>Primary Structural Parts (Palm, Phalanges, Brackets): <strong>Carbon-Fiber Reinforced PETG, ABS, Nylon (PA12-CF), or Tough Resin</strong> for rigid load bearing under cable tension.</li>
+<li>Soft Grip Pads: <strong>TPU 85A/95A</strong> for high friction fingertips and palmar pads.</li>
+<li><strong>Layer Height</strong>: 0.12 mm - 0.16 mm (critical for clean joint pin bores and smooth eyelets).</li>
+<li><strong>Perimeters / Walls</strong>: Minimum 4-5 walls (1.6 - 2.0 mm total wall thickness) to withstand tendon pull forces (up to 35 N per finger).</li>
+<li><strong>Infill</strong>: 40% - 50% Gyroid or Honeycomb.</li>
+<li><strong>Support</strong>: Normal or Tree supports enabled. Block supports inside the Ø2.0 mm cable guide channels; clean channels post-print with a 1.5mm drill bit or heated wire.</li>
+</ul>
+<hr />
+<h2>4. Tendon-Driven Servo Routing &amp; Forearm Integration</h2>
+<h3>A. Routing Channels &amp; Fairleads</h3>
+<ol>
+<li><strong>Digits II to V (Flexors &amp; Abductors)</strong>:</li>
+<li>Each phalanx contains an internal or palmar routing bore (Ø1.5 – 2.0 mm).</li>
+<li>The flexor cable terminates inside the <strong>Distal Phalanx</strong> anchored via an internal knot, brass crimp bead, or M2 grub screw.</li>
+<li>Secondary lateral tendons pass through the metacarpal bases to dedicated abduction servos for side-to-side spread.</li>
+<li>Tendons route over joint pivot axes through smooth radiused fairleads down into the palm cavity and into PTFE Bowden guide tubes.</li>
+<li><strong>Thumb Routing (Triple Tendon Multi-Axis)</strong>:</li>
+<li><strong>Tendon 1 (Flexor)</strong>: Originates at the thumb distal phalanx, traverses IP and MCP palmar eyelets into Servo 13.</li>
+<li><strong>Tendon 2 (Pronation / Opposition)</strong>: Anchored to the lateral tubercle of the thumb metacarpal/proximal phalanx, routed through the ulnar thenar guide into Servo 15 to sweep the thumb across the palm.</li>
+<li><strong>Tendon 3 (Palmar Abductor)</strong>: Routed to Servo 16 for radial/palmar clearance.</li>
+<li><strong>Forearm Servo Bay</strong>:</li>
+<li>High-density modular servo rack mounted directly behind the wrist gimbal.</li>
+<li>Each servo output features an aluminum or printed mini-winch spool (Ø10 – 14 mm) to translate angular rotation into linear tendon travel.</li>
+</ol>
+<hr />
+<h2>5. Assembly Step-by-Step</h2>
+<h3>Phase 1: Post-Processing &amp; Bore Reaming</h3>
+<ol>
+<li>Carefully remove support material around all joint clevises.</li>
+<li>Run a 3.0 mm drill bit by hand through every pivot hinge hole to ensure silky-smooth rotation without radial slop.</li>
+<li>Clean out cable passages using a 1.2 mm - 1.5 mm music wire or flexible guitar string.</li>
+</ol>
+<h3>Phase 2: Finger Assembly &amp; Return Springs</h3>
+<ol>
+<li>Connect Distal to Intermediate phalanx with a 3mm dowel pin.</li>
+<li>Connect Intermediate to Proximal phalanx.</li>
+<li>Insert dorsal elastic band or miniature torsion spring along the dorsal groove.</li>
+<li>Verify instant spring return motion under zero tendon load.</li>
+<li>Repeat for Index, Middle, Ring, and Pinky digits.</li>
+</ol>
+<h3>Phase 3: Palm &amp; Thumb Assembly</h3>
+<ol>
+<li>Pin each assembled finger into its corresponding palm knuckle clevis.</li>
+<li>Assemble the thumb saddle joint onto the thenar mount using the specified compound angle.</li>
+<li>Attach the thumb proximal and distal links. Ensure full collision-free range of motion across the palm.</li>
+</ol>
+<h3>Phase 4: Servo Mounting &amp; Tendon Rigging</h3>
+<ol>
+<li>Install servos into the forearm rack bays. Center all servos at neutral PWM (1500 µs).</li>
+<li>Thread Dyneema lines through the distal termination anchor.</li>
+<li>Feed down through intermediate and proximal guides, through the palm internal routing tubes, and through PTFE sleeve conduits into the forearm bay.</li>
+<li>Secure lines onto the servo spools with slight pre-tensioning using brass crimps or tensioner screws.</li>
+</ol>
+<hr />
+<h2>6. Testing, Calibration, and Control Integration</h2>
+<ol>
+<li><strong>Manual Articulation</strong>: Verify full closure into a cylindrical grasp, spherical grasp, and tip-to-tip pinch.</li>
+<li><strong>Servo Stroke Calibration</strong>:</li>
+<li>Typical stroke required per digit: 18 - 26 mm of tendon travel.</li>
+<li>On a 12mm radius winch horn, this corresponds to approximately 90° – 130° of servo rotation.</li>
+<li><strong>Current-Based Stall Detection</strong>:</li>
+<li>Calibrate the microcontroller current sense threshold to 800–1200 mA per servo to avoid motor burnout upon firm object contact.</li>
+<li><strong>Trajectory Mapping</strong>:</li>
+<li>Program coordinated synergies (e.g., synchronous MCP, PIP, and DIP curling) to create smooth, natural human-like grasps.</li>
+</ol>
+</body>
+</html>
