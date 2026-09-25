@@ -1,38 +1,31 @@
-# Parametric Anthropomorphic 5-Finger Robotic Hand
+# Anthropomorphic 5-Finger Robotic Hand (Organic / Biomimetic CAD)
 
-A fully parametric, 3D-printable anthropomorphic robotic hand designed for tendon-driven actuation, underactuated compliant grasping, and robotic arm mounting.
+A parametric, 3D-printable anthropomorphic robotic hand designed with **ergonomically curved, human-like finger phalanxes, rounded palmar contours, and tactile pulp cushions**, combining biomimetic aesthetics with precise mechanical pin joints and tendon routing.
 
-## Project Structure
+## Key Features
 
-- **`robotic_hand.scad`**: Fully parametric OpenSCAD source file. Change pin tolerances, hand dimensions, finger scale factors, or render isolated components.
-- **`generate_hand_stl.py`**: Python script using `trimesh` & `manifold3d` to procedurally compile watertight CAD models and export STLs.
-- **`index.html`**: Interactive WebGL (Three.js) 3D model viewer with live forward/inverse kinematics, grasp presets (Fist, Pinch, Point, Open), exploded view, and wireframe analysis.
+- **Ergonomic Finger Curvature:** Tapered ellipsoid profiles with subtle resting flexion curves and palmar cushions mimicking human fingers.
+- **Biomimetic Palm:** Fleshy thenar (thumb) and hypothenar (pinky) contours with anatomical metacarpal arching.
+- **Tendon Channels:** Ø1.5 mm longitudinal bores for low-friction Dyneema / Spectra / Bowden cable actuation.
+- **Pin Joints:** Clean 3.0 mm stainless dowel / M3 bolt hinge clearances (0.30mm tolerance).
+- **Robotic Flange Mount:** Standard 4x M3 circular mounting pattern for robotic arms.
+- **Interactive 3D WebGL Viewer:** Live kinematics, grasping presets, wireframe and exploded views in `index.html`.
+
+## Project Directory
+
+- **`index.html`**: Interactive Three.js WebGL visualizer with live joint control and grasp presets.
+- **`robotic_hand.scad`**: Parametric OpenSCAD design with organic hull profiles.
+- **`generate_hand_stl.py`**: Procedural watertight STL compilation script using `trimesh`, `manifold3d`, and `scipy`.
 - **`stl_exports/`**:
-  - `palm.stl`: Main chassis with knuckle clevises, thumb abductor socket, internal servo routing cavity, and ISO 4x M3 wrist flange.
-  - `proximal_phalanx.stl`: Base knuckle finger segment with flexor/extensor tendon bores.
-  - `intermediate_phalanx.stl`: Mid segment with dual clevis joints.
-  - `distal_phalanx.stl`: Fingertip with high-friction pad surface and tendon termination knot pocket.
-  - `robotic_hand_full_assembly.stl`: Complete pre-assembled 5-finger articulated hand.
+  - `robotic_hand_full_assembly.stl`: Complete 5-finger articulated hand assembly.
+  - `palm.stl`: Contoured palm base with wrist flange.
+  - `proximal_phalanx.stl`: Ergonomically rounded base segment.
+  - `intermediate_phalanx.stl`: Mid segment with double clevises.
+  - `distal_phalanx.stl`: Fingertip with tactile pad and tendon knot anchor.
 
-## Hardware & Fabrication Specifications
+## Quick Start
 
-| Specification | Dimension / Value |
-|---|---|
-| **Degrees of Freedom (DOF)** | 16 kinematic joints (10-15 active via tendon cables) |
-| **Joint Hinge Pins** | 3.0 mm stainless steel dowel pins or M3 bolts (L=16–22mm) |
-| **Tendon Channel Dia** | 1.5 mm (compatible with 0.8–1.2mm Dyneema / Spectra / steel wire) |
-| **Palm Base Size** | 72 mm (W) × 82 mm (L) × 20 mm (H) |
-| **Wrist Mounting Interface** | ISO robotic circular flange pattern (4x M3 on Ø36mm BCD) |
-| **Recommended Materials** | PETG, PLA-CF, or PA12 Nylon (FDM) / Tough Resin (SLA) |
-| **Infill & Walls** | 4 perimeters, 40-50% gyroid infill for structural stiffness |
-
-## Viewing & Customizing
-
-### 1. View the 3D Model Interactively
-Simply open `index.html` in your browser (e.g. `open index.html` on macOS) to test finger movement and grasp kinematics.
-
-### 2. Regenerate STLs
-To adjust parametric dimensions, edit `generate_hand_stl.py` or `robotic_hand.scad` and run:
+Open `index.html` in your browser to inspect and manipulate the hand model in real time:
 ```bash
-./venv/bin/python generate_hand_stl.py
+open index.html
 ```
