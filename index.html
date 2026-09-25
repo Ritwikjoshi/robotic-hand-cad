@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomechanical Anthropomorphic Robotic Hand - Realistic Thumb Kinematics</title>
+    <title>Biomechanical Anthropomorphic Robotic Hand - Corrected Thumb & Servo Integration</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -215,7 +215,7 @@
 
     <div class="hud-overlay header-title">
         <h1>Anatomical Human-Like Robotic Hand</h1>
-        <p>Expert Saddle CMC Thumb Biomechanics · Natural Multi-Axis Opposition</p>
+        <p>Corrected CMC Saddle Joint · Servo Adapter · Tendon-Driven Actuation</p>
     </div>
 
     <div class="hud-overlay control-panel">
@@ -454,7 +454,7 @@
             thenarGeom.scale(1.15, 1.45, 0.95);
             const thenar = new THREE.Mesh(thenarGeom, matPulp);
             thenar.position.set(-PALM_W * 0.36, PALM_L * 0.28, -2.0);
-            thenar.rotation.set(0.35, 0.45, -0.65);
+            thenar.rotation.set(0.40, -0.30, 0.45);
             palmSkin.add(thenar);
 
             // Hypothenar Eminence
@@ -511,16 +511,19 @@
             }
 
             // =========================================================================
-            // BIOMECHANICALLY CORRECT THUMB HIERARCHY
-            // Trapeziometacarpal Saddle (CMC) -> MCP Joint -> IP Joint
-            // Base location: lower thenar mound (near wrist).
-            // Default resting orientation: 42° palmar projection, 35° pronation facing fingers.
+            // CORRECTED THUMB HIERARCHY — Biomechanically Accurate
+            // Root cause fix: Old rotation (0.55, 0.45, -0.75) projected the thumb
+            // dorsally with pad facing away from fingers.
+            // New rotation (0.85, -0.35, 0.50):
+            //   X = +0.85 rad (+49°) -> Palmar abduction (out toward viewer +Z)
+            //   Y = -0.35 rad (-20°) -> Pronation (pad faces medially toward fingers)
+            //   Z = +0.50 rad (+29°) -> Radial abduction (clearance from index)
             // =========================================================================
             const thumbBase = new THREE.Group();
             thumbBase.position.set(-PALM_W * 0.36 - 2.5, PALM_L * 0.28, -2.0);
             
-            // Resting compound angle (projects out of the palm plane, toward fingertips)
-            thumbBase.rotation.set(0.55, 0.45, -0.75);
+            // CORRECTED resting compound angle
+            thumbBase.rotation.set(0.85, -0.35, 0.50);
 
             // CMC Joint node (Opposition & Circumduction around compound axis)
             const cmcNode = new THREE.Group();
@@ -579,13 +582,15 @@
             flexFinger(fingers.pinky, pnkVal);
 
             // =========================================================================
-            // EXPERT THUMB OPPOSITION KINEMATICS:
-            // 1. Opposition (CMC Z & Y rotation): Moves thumb across palm toward index/middle/ring.
-            // 2. Palmar Flexion (MCP & IP rotation): Curves tip in toward opposing finger pads.
+            // CORRECTED THUMB OPPOSITION KINEMATICS:
+            // With base rotation (0.85, -0.35, 0.50), opposition works as:
+            //   CMC Z goes NEGATIVE -> sweeps thumb across palm toward +X (ulnar)
+            //   CMC Y goes NEGATIVE -> increases pronation for pad-to-pad contact
+            //   CMC X stays stable -> maintains palmar projection
             // =========================================================================
-            thumbRigs.cmc.rotation.z = -thOppVal * 0.85;
-            thumbRigs.cmc.rotation.y = thOppVal * 0.55;
-            thumbRigs.cmc.rotation.x = thFlexVal * 0.45;
+            thumbRigs.cmc.rotation.z = -thOppVal * 0.70;
+            thumbRigs.cmc.rotation.y = -thOppVal * 0.40;
+            thumbRigs.cmc.rotation.x = thFlexVal * 0.35;
 
             // MCP and IP joints flex inward to close grasp
             thumbRigs.mcp.rotation.x = thFlexVal * 0.75;
