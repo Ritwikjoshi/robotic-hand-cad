@@ -1,23 +1,20 @@
 // =========================================================================
 // Parametric Anthropomorphic 5-Finger Robotic Hand CAD Model
-// Anatomically Realistic Human Palm & Curved Phalanxes
-// Features: Thenar eminence, Hypothenar eminence, Palmar cup, Knuckle arch
+// Biomechanically Corrected Thumb Kinematics & Anatomical Palm
 // =========================================================================
 
 $fn = 40;
 
-// Anatomical Dimensions (mm)
 PALM_WIDTH  = 74;
 PALM_LENGTH = 84;
 PALM_THICK  = 21;
-PIN_DIA     = 3.0;   // M3 pin / dowel
-PIN_TOL     = 0.3;   // Pin clearance
-TENDON_DIA  = 1.5;   // Low-friction tendon channel
+PIN_DIA     = 3.0;
+PIN_TOL     = 0.3;
+TENDON_DIA  = 1.5;
 WALL_THICK  = 2.5;
 
-PART_TO_RENDER = "assembly"; // "assembly", "palm", "proximal", "intermediate", "distal"
+PART_TO_RENDER = "assembly";
 
-// --- Modules: Pin & Tendon Holes ---
 module pin_hole(length=30, dia=PIN_DIA+PIN_TOL) {
     cylinder(d=dia, h=length, center=true);
 }
@@ -26,7 +23,6 @@ module tendon_bore(length=60, dia=TENDON_DIA) {
     cylinder(d=dia, h=length, center=true);
 }
 
-// --- Distal Phalanx (Fingertip) ---
 module distal_phalanx(length=24, width=12, height=10) {
     difference() {
         union() {
@@ -64,7 +60,6 @@ module distal_phalanx(length=24, width=12, height=10) {
     }
 }
 
-// --- Intermediate Phalanx ---
 module intermediate_phalanx(length=28, width=13, height=11) {
     clevis_w = 4.2;
     difference() {
@@ -105,7 +100,6 @@ module intermediate_phalanx(length=28, width=13, height=11) {
     }
 }
 
-// --- Proximal Phalanx ---
 module proximal_phalanx(length=38, width=15, height=13) {
     clevis_w = 4.0;
     difference() {
@@ -147,7 +141,6 @@ module proximal_phalanx(length=38, width=15, height=13) {
     }
 }
 
-// --- Articulated Finger ---
 module finger(scale_f=1.0, flex_mcp=15, flex_pip=25, flex_dip=20) {
     p_len = 38 * scale_f;
     i_len = 26 * scale_f;
@@ -170,42 +163,38 @@ module finger(scale_f=1.0, flex_mcp=15, flex_pip=25, flex_dip=20) {
     }
 }
 
-// --- Anatomically Sculpted Realistic Human Palm ---
 module palm_structure() {
     difference() {
         union() {
-            // Smooth organic carpal/metacarpal hull
             hull() {
-                // Wrist carpal base
                 translate([-PALM_WIDTH*0.3, 10, 0]) sphere(r=10);
                 translate([ PALM_WIDTH*0.3, 10, 0]) sphere(r=9.5);
                 
-                // Thenar eminence (bulbous thumb ball)
-                translate([-PALM_WIDTH*0.34, PALM_LENGTH*0.36, -2])
-                    scale([1.1, 1.4, 0.9]) sphere(r=14);
+                // Lower Thenar Eminence (Thumb base muscle)
+                translate([-PALM_WIDTH*0.36, PALM_LENGTH*0.28, -2])
+                    scale([1.15, 1.35, 0.9]) sphere(r=14);
                 
-                // Hypothenar eminence (pinky side muscle pad)
+                // Hypothenar Eminence
                 translate([ PALM_WIDTH*0.36, PALM_LENGTH*0.40, -2.5])
                     scale([0.9, 1.5, 0.85]) sphere(r=12.5);
                 
-                // Distal palmar cushion under knuckles
+                // Metacarpal Heads
                 translate([-23, PALM_LENGTH - 10, 0]) sphere(r=9);
                 translate([ -8, PALM_LENGTH - 8,  0.5]) sphere(r=9.5);
                 translate([  8, PALM_LENGTH - 9,  0.2]) sphere(r=9.2);
                 translate([ 23, PALM_LENGTH - 12, -0.4]) sphere(r=8.5);
 
-                // Dorsal arch
                 translate([0, PALM_LENGTH*0.45, PALM_THICK*0.3])
                     scale([1.2, 1.4, 0.8]) sphere(r=12);
             }
         }
 
-        // Central palmar hollow / cup
+        // Palmar hollow
         translate([0, PALM_LENGTH*0.44, -PALM_THICK*0.5])
             scale([1.2, 1.2, 0.6])
                 sphere(r=14);
 
-        // Knuckle clevises on cascade arch
+        // 4 Finger knuckle clevises
         finger_x = [-23, -8, 8, 23];
         knuckle_y = [PALM_LENGTH - 2.5, PALM_LENGTH, PALM_LENGTH - 1.2, PALM_LENGTH - 3.8];
         knuckle_z = [0.4, 0.8, 0.3, -0.4];
@@ -223,9 +212,10 @@ module palm_structure() {
             }
         }
 
-        // Thumb CMC joint socket in the thenar mound
-        translate([-PALM_WIDTH*0.34 - 3, PALM_LENGTH*0.36, -1.5])
-        rotate([18, 32, -38]) {
+        // Biomechanically Corrected Thumb CMC socket
+        // Placed at the lower thenar base with 42° palmar abduction & 38° pronation
+        translate([-PALM_WIDTH*0.36 - 2.5, PALM_LENGTH*0.28, -2.0])
+        rotate([26, 38, -48]) {
             cube([6.0, 18, 22], center=true);
             rotate([0, 90, 0])
                 pin_hole(length=24);
@@ -238,7 +228,7 @@ module palm_structure() {
         translate([0, PALM_LENGTH*0.42, 0])
             cube([PALM_WIDTH*0.58, PALM_LENGTH*0.45, PALM_THICK - 2*WALL_THICK], center=true);
 
-        // Robotic wrist mount
+        // Robotic wrist flange mount
         translate([0, 4, 0]) {
             cylinder(d=26, h=PALM_THICK*2, center=true);
             for (a = [45, 135, 225, 315]) {
@@ -250,7 +240,7 @@ module palm_structure() {
     }
 }
 
-// --- Full Assembly ---
+// --- Assemble Hand with True Thumb Opposition ---
 module full_assembly() {
     palm_structure();
 
@@ -274,12 +264,12 @@ module full_assembly() {
         rotate([0, 0, 4])
             finger(scale_f=0.90, flex_mcp=30, flex_pip=45, flex_dip=25);
 
-    // Thumb
-    translate([-PALM_WIDTH*0.34 - 3, PALM_LENGTH*0.36, -1.5])
-    rotate([25, 35, -40]) {
+    // True Opposable Thumb (Originates at lower thenar mound)
+    translate([-PALM_WIDTH*0.36 - 2.5, PALM_LENGTH*0.28, -2.0])
+    rotate([32, 42, -50]) {
         proximal_phalanx(length=32, width=15, height=13);
         translate([0, 32, 0])
-            rotate([30, 0, 0])
+            rotate([25, 0, 0])
                 distal_phalanx(length=26, width=14, height=11.5);
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parametric Anthropomorphic Robotic Hand - Realistic Anatomical Model</title>
+    <title>Biomechanical Anthropomorphic Robotic Hand - Realistic Thumb Kinematics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -12,7 +12,7 @@
             --panel-bg: rgba(15, 23, 42, 0.88);
             --border-color: rgba(255, 255, 255, 0.12);
             --accent-cyan: #38bdf8;
-            --accent-flesh: #f59e0b;
+            --accent-gold: #f59e0b;
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
         }
@@ -78,7 +78,7 @@
         .control-panel {
             top: 24px;
             right: 28px;
-            width: 330px;
+            width: 340px;
             max-height: calc(100vh - 48px);
             overflow-y: auto;
             pointer-events: auto;
@@ -215,7 +215,7 @@
 
     <div class="hud-overlay header-title">
         <h1>Anatomical Human-Like Robotic Hand</h1>
-        <p>Sculpted Carpal/Thenar Palm · Curved Phalanxes · 16 DOF</p>
+        <p>Expert Saddle CMC Thumb Biomechanics · Natural Multi-Axis Opposition</p>
     </div>
 
     <div class="hud-overlay control-panel">
@@ -227,18 +227,27 @@
             <div class="btn-grid">
                 <button onclick="setPreset('open')" class="active" id="btn-open">Relaxed Rest</button>
                 <button onclick="setPreset('fist')" id="btn-fist">Natural Fist</button>
-                <button onclick="setPreset('pinch')" id="btn-pinch">Precision Pinch</button>
-                <button onclick="setPreset('point')" id="btn-point">Human Point</button>
+                <button onclick="setPreset('pinch')" id="btn-pinch">Tip Pinch (Index)</button>
+                <button onclick="setPreset('cylinder')" id="btn-cylinder">Cylindrical Grasp</button>
             </div>
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Anatomical Flexion</div>
+            <div class="section-title">Thumb Biomechanics (CMC + MCP + IP)</div>
             
             <div class="slider-group">
-                <div class="slider-label">Thumb (Opposable) <span class="val" id="val-thumb">12°</span></div>
-                <input type="range" id="slider-thumb" min="0" max="80" value="12" oninput="updateHand()">
+                <div class="slider-label">Thumb Opposition (Pronation) <span class="val" id="val-th-opp">0°</span></div>
+                <input type="range" id="slider-th-opp" min="0" max="65" value="15" oninput="updateHand()">
             </div>
+
+            <div class="slider-group">
+                <div class="slider-label">Thumb Palmar Flexion <span class="val" id="val-th-flex">0°</span></div>
+                <input type="range" id="slider-th-flex" min="0" max="70" value="12" oninput="updateHand()">
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">Finger Flexion</div>
 
             <div class="slider-group">
                 <div class="slider-label">Index Finger <span class="val" id="val-index">16°</span></div>
@@ -267,19 +276,18 @@
                 <button onclick="toggleWireframe()" id="btn-wire">Wireframe</button>
                 <button onclick="toggleExploded()" id="btn-explode">Exploded View</button>
                 <button onclick="toggleTheme()" id="btn-theme">Prosthetic Tone</button>
-                <button onclick="resetCamera()">Center Camera</button>
+                <button onclick="resetCamera()">Center View</button>
             </div>
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Human Palm Anatomy Specs</div>
+            <div class="section-title">Thumb Biomechanics Specs</div>
             <table class="specs-table">
-                <tr><td>Thenar Mound</td><td>Convex ball of thumb muscle</td></tr>
-                <tr><td>Hypothenar Mound</td><td>Pinky cushion / lateral contour</td></tr>
-                <tr><td>Metacarpal Arch</td><td>Cascading 4-digit transverse curve</td></tr>
-                <tr><td>Palmar Cup</td><td>Central concave gripping hollow</td></tr>
-                <tr><td>Joint Tolerances</td><td>0.30mm (Dowel/Pin Hinge)</td></tr>
-                <tr><td>Tendon Channel</td><td>Ø1.5 mm Low-Friction Routing</td></tr>
+                <tr><td>CMC Joint Type</td><td>Trapeziometacarpal Saddle (2-DOF)</td></tr>
+                <tr><td>Resting Plane</td><td>45° Palmar Abduction / Out-of-plane</td></tr>
+                <tr><td>Opposition Vector</td><td>Faces Index & Middle finger pulps</td></tr>
+                <tr><td>MCP / IP Kinematics</td><td>Coupled flexion with internal twist</td></tr>
+                <tr><td>Fastener / Dowel</td><td>3.0 mm Dowel Pin / M3 Bolt</td></tr>
             </table>
         </div>
     </div>
@@ -289,6 +297,7 @@
     <script>
         let scene, camera, renderer, controls;
         let fingers = {};
+        let thumbRigs = {};
         let palmGroup;
         let isWireframe = false;
         let isExploded = false;
@@ -298,7 +307,6 @@
         const PALM_L = 84;
         const PALM_H = 21;
 
-        // Realistic materials
         const matChassis = new THREE.MeshStandardMaterial({
             color: 0x242e42,
             roughness: 0.38,
@@ -312,7 +320,7 @@
         });
 
         const matPulp = new THREE.MeshStandardMaterial({
-            color: 0x0284c7, // Tactile blue pad
+            color: 0x0284c7,
             roughness: 0.48,
             metalness: 0.15
         });
@@ -333,7 +341,7 @@
             scene.add(grid);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(0, -180, 160);
+            camera.position.set(-30, -190, 150);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -346,7 +354,6 @@
             controls.dampingFactor = 0.05;
             controls.target.set(0, 42, 0);
 
-            // Lighting
             const ambient = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambient);
 
@@ -365,31 +372,26 @@
             animate();
         }
 
-        // Procedural Rounded Organic Phalanx
         function buildOrganicPhalanx(len, wProx, hProx, wDist, hDist, isFingertip = false) {
             const group = new THREE.Group();
             const bodyGroup = new THREE.Group();
 
-            // Proximal Knuckle Bulb
             const proxBulbGeom = new THREE.SphereGeometry(hProx * 0.48, 20, 20);
             proxBulbGeom.scale(wProx / hProx, 1, 1);
             const proxBulb = new THREE.Mesh(proxBulbGeom, matBioBone);
             bodyGroup.add(proxBulb);
 
-            // Mid phalanx body with ergonomic roundness
             const midGeom = new THREE.CylinderGeometry(wDist * 0.42, wProx * 0.46, len, 24, 8);
             midGeom.translate(0, len / 2, -0.4);
             const midMesh = new THREE.Mesh(midGeom, matBioBone);
             bodyGroup.add(midMesh);
 
-            // Palmar Fleshy Pad (Grip Cushion)
             const padGeom = new THREE.SphereGeometry(hProx * 0.42, 20, 16);
             padGeom.scale(wProx * 0.38 / (hProx * 0.42), len * 0.32 / (hProx * 0.42), 0.7);
             const padMesh = new THREE.Mesh(padGeom, matPulp);
             padMesh.position.set(0, len * 0.5, -hProx * 0.38);
             bodyGroup.add(padMesh);
 
-            // Distal head
             const distBulbGeom = new THREE.SphereGeometry(hDist * 0.46, 20, 20);
             distBulbGeom.scale(wDist / hDist, 1, 1);
             distBulbGeom.translate(0, len, 0);
@@ -404,7 +406,6 @@
                 bodyGroup.add(pulpMesh);
             }
 
-            // Hinge Pin
             const pinGeom = new THREE.CylinderGeometry(1.5, 1.5, wProx + 1.5, 16);
             pinGeom.rotateZ(Math.PI / 2);
             const pinMesh = new THREE.Mesh(pinGeom, matPin);
@@ -440,39 +441,37 @@
 
         function buildAnatomicalHand() {
             palmGroup = new THREE.Group();
-
-            // 1. Realistic Sculpted Human Palm
             const palmSkin = new THREE.Group();
 
-            // Dorsal hand surface (smooth gentle contour)
+            // Dorsal palm
             const dorsalGeom = new THREE.BoxGeometry(PALM_W * 0.85, PALM_L * 0.88, PALM_H * 0.6);
             dorsalGeom.translate(0, PALM_L * 0.48, PALM_H * 0.15);
             const dorsalMesh = new THREE.Mesh(dorsalGeom, matChassis);
             palmSkin.add(dorsalMesh);
 
-            // Thenar Eminence (prominent bulbous thumb base muscular mound)
-            const thenarGeom = new THREE.SphereGeometry(15, 24, 24);
-            thenarGeom.scale(1.15, 1.55, 0.85);
+            // Lower Thenar Eminence (Thumb base muscular ball)
+            const thenarGeom = new THREE.SphereGeometry(16, 24, 24);
+            thenarGeom.scale(1.15, 1.45, 0.95);
             const thenar = new THREE.Mesh(thenarGeom, matPulp);
-            thenar.position.set(-PALM_W * 0.32, PALM_L * 0.36, -2.5);
-            thenar.rotation.set(0.2, 0.35, -0.4);
+            thenar.position.set(-PALM_W * 0.36, PALM_L * 0.28, -2.0);
+            thenar.rotation.set(0.35, 0.45, -0.65);
             palmSkin.add(thenar);
 
-            // Hypothenar Eminence (pinky side elongated muscular mound)
+            // Hypothenar Eminence
             const hypoGeom = new THREE.SphereGeometry(13.5, 24, 24);
             hypoGeom.scale(0.85, 1.85, 0.8);
             const hypo = new THREE.Mesh(hypoGeom, matPulp);
             hypo.position.set(PALM_W * 0.35, PALM_L * 0.40, -3.0);
             palmSkin.add(hypo);
 
-            // Distal Palmar Metacarpal Ridge (cushion mounds right below knuckles)
+            // Distal Palmar Metacarpal Ridge
             const ridgeGeom = new THREE.CylinderGeometry(7.5, 7.5, PALM_W * 0.78, 24);
             ridgeGeom.rotateZ(Math.PI / 2);
             ridgeGeom.translate(0, PALM_L - 14, -PALM_H * 0.2);
             const ridge = new THREE.Mesh(ridgeGeom, matPulp);
             palmSkin.add(ridge);
 
-            // Individual Metacarpal Knuckle Heads (transverse cascade arch)
+            // 4 Knuckle mounds on cascade arch
             const knuckleX = [-23, -8, 8, 23];
             const knuckleY = [PALM_L - 2.5, PALM_L, PALM_L - 1.2, PALM_L - 3.8];
             const knuckleZ = [0.4, 0.8, 0.3, -0.4];
@@ -485,7 +484,7 @@
                 palmSkin.add(kMesh);
             }
 
-            // Wrist Base Transition & ISO Flange Mount
+            // Wrist interface
             const wristGeom = new THREE.CylinderGeometry(15, 16, 14, 32);
             const wristMesh = new THREE.Mesh(wristGeom, matChassis);
             wristMesh.position.set(0, 0, 0);
@@ -494,7 +493,7 @@
             palmGroup.add(palmSkin);
             scene.add(palmGroup);
 
-            // 2. Cascade Placement for 4 Fingers matching the Metacarpal Arch
+            // 4 Digits
             const fingerConfigs = {
                 pinky:  { x: 23,  y: PALM_L - 3.8, z: -0.4, s: 0.78, rotZ: -0.10 },
                 ring:   { x: 8,   y: PALM_L - 1.2, z:  0.3, s: 0.92, rotZ: -0.04 },
@@ -511,39 +510,63 @@
                 fingers[name] = f;
             }
 
-            // 3. Opposable Thumb positioned naturally on the Thenar Mound
-            const thumbRoot = new THREE.Group();
-            thumbRoot.position.set(-PALM_W * 0.32 - 3, PALM_L * 0.36, -2.5);
-            thumbRoot.rotation.set(0.35, 0.65, -0.72);
+            // =========================================================================
+            // BIOMECHANICALLY CORRECT THUMB HIERARCHY
+            // Trapeziometacarpal Saddle (CMC) -> MCP Joint -> IP Joint
+            // Base location: lower thenar mound (near wrist).
+            // Default resting orientation: 42° palmar projection, 35° pronation facing fingers.
+            // =========================================================================
+            const thumbBase = new THREE.Group();
+            thumbBase.position.set(-PALM_W * 0.36 - 2.5, PALM_L * 0.28, -2.0);
+            
+            // Resting compound angle (projects out of the palm plane, toward fingertips)
+            thumbBase.rotation.set(0.55, 0.45, -0.75);
 
+            // CMC Joint node (Opposition & Circumduction around compound axis)
+            const cmcNode = new THREE.Group();
+            thumbBase.add(cmcNode);
+
+            // Proximal phalanx (Thumb Metacarpal equivalent)
             const thP = buildOrganicPhalanx(32, 15.5, 13.5, 14, 12);
-            const thD = buildOrganicPhalanx(26, 14, 12, 12, 10.5, true);
-            thD.group.position.y = 32;
-            thP.group.add(thD.group);
-            thumbRoot.add(thP.group);
-            palmGroup.add(thumbRoot);
+            cmcNode.add(thP.group);
 
-            fingers.thumb = {
-                root: thumbRoot,
-                pJoint: thP.group,
-                dJoint: thD.group
+            // MCP Joint node
+            const mcpNode = new THREE.Group();
+            mcpNode.position.y = 32;
+            thP.group.add(mcpNode);
+
+            // Distal phalanx (Fingertip)
+            const thD = buildOrganicPhalanx(26, 14, 12, 12, 10.5, true);
+            mcpNode.add(thD.group);
+
+            palmGroup.add(thumbBase);
+
+            thumbRigs = {
+                base: thumbBase,
+                cmc: cmcNode,
+                mcp: mcpNode,
+                distal: thD.group
             };
         }
 
         function updateHand() {
             const rad = Math.PI / 180;
-            const thVal = parseFloat(document.getElementById('slider-thumb').value) * rad;
+            const thOppVal = parseFloat(document.getElementById('slider-th-opp').value) * rad;
+            const thFlexVal = parseFloat(document.getElementById('slider-th-flex').value) * rad;
+
             const idxVal = parseFloat(document.getElementById('slider-index').value) * rad;
             const midVal = parseFloat(document.getElementById('slider-middle').value) * rad;
             const rngVal = parseFloat(document.getElementById('slider-ring').value) * rad;
             const pnkVal = parseFloat(document.getElementById('slider-pinky').value) * rad;
 
-            document.getElementById('val-thumb').innerText = Math.round(thVal / rad) + '°';
+            document.getElementById('val-th-opp').innerText = Math.round(thOppVal / rad) + '°';
+            document.getElementById('val-th-flex').innerText = Math.round(thFlexVal / rad) + '°';
             document.getElementById('val-index').innerText = Math.round(idxVal / rad) + '°';
             document.getElementById('val-middle').innerText = Math.round(midVal / rad) + '°';
             document.getElementById('val-ring').innerText = Math.round(rngVal / rad) + '°';
             document.getElementById('val-pinky').innerText = Math.round(pnkVal / rad) + '°';
 
+            // Natural 4-finger flexion
             function flexFinger(f, angle) {
                 f.pJoint.rotation.x = angle * 0.75;
                 f.iJoint.rotation.x = angle * 0.95;
@@ -555,8 +578,18 @@
             flexFinger(fingers.ring, rngVal);
             flexFinger(fingers.pinky, pnkVal);
 
-            fingers.thumb.pJoint.rotation.x = thVal * 0.85;
-            fingers.thumb.dJoint.rotation.x = thVal * 0.75;
+            // =========================================================================
+            // EXPERT THUMB OPPOSITION KINEMATICS:
+            // 1. Opposition (CMC Z & Y rotation): Moves thumb across palm toward index/middle/ring.
+            // 2. Palmar Flexion (MCP & IP rotation): Curves tip in toward opposing finger pads.
+            // =========================================================================
+            thumbRigs.cmc.rotation.z = -thOppVal * 0.85;
+            thumbRigs.cmc.rotation.y = thOppVal * 0.55;
+            thumbRigs.cmc.rotation.x = thFlexVal * 0.45;
+
+            // MCP and IP joints flex inward to close grasp
+            thumbRigs.mcp.rotation.x = thFlexVal * 0.75;
+            thumbRigs.distal.rotation.x = thFlexVal * 0.60;
         }
 
         function setPreset(name) {
@@ -565,14 +598,15 @@
             if (activeBtn) activeBtn.classList.add('active');
 
             const presets = {
-                open:  { thumb: 12, index: 16, middle: 18, ring: 20, pinky: 22 },
-                fist:  { thumb: 72, index: 86, middle: 88, ring: 86, pinky: 82 },
-                pinch: { thumb: 64, index: 62, middle: 20, ring: 16, pinky: 14 },
-                point: { thumb: 62, index: 6,  middle: 86, ring: 86, pinky: 82 }
+                open:     { thOpp: 10, thFlex: 10, index: 14, middle: 16, ring: 18, pinky: 20 },
+                fist:     { thOpp: 55, thFlex: 65, index: 86, middle: 88, ring: 86, pinky: 82 },
+                pinch:    { thOpp: 46, thFlex: 42, index: 58, middle: 18, ring: 14, pinky: 12 },
+                cylinder: { thOpp: 32, thFlex: 48, index: 55, middle: 58, ring: 60, pinky: 62 }
             };
 
             const p = presets[name];
-            document.getElementById('slider-thumb').value = p.thumb;
+            document.getElementById('slider-th-opp').value = p.thOpp;
+            document.getElementById('slider-th-flex').value = p.thFlex;
             document.getElementById('slider-index').value = p.index;
             document.getElementById('slider-middle').value = p.middle;
             document.getElementById('slider-ring').value = p.ring;
@@ -597,7 +631,7 @@
             fingers.middle.root.position.y = (PALM_L - 2) + offset * 1.35;
             fingers.ring.root.position.y = (PALM_L - 1.2 - 2) + offset;
             fingers.pinky.root.position.y = (PALM_L - 3.8 - 2) + offset * 0.75;
-            fingers.thumb.root.position.x = (-PALM_W * 0.32 - 3) - offset;
+            thumbRigs.base.position.x = (-PALM_W * 0.36 - 2.5) - offset;
         }
 
         function toggleTheme() {
@@ -608,15 +642,15 @@
                 matPulp.color.setHex(0x0284c7);
                 document.getElementById('btn-theme').innerText = "Prosthetic Tone";
             } else {
-                matChassis.color.setHex(0xdfa07a); // Warm prosthetic flesh
+                matChassis.color.setHex(0xdfa07a);
                 matBioBone.color.setHex(0xe8b595);
-                matPulp.color.setHex(0xe27d60); // Fleshy palm pad tone
+                matPulp.color.setHex(0xe27d60);
                 document.getElementById('btn-theme').innerText = "Cyber Tone";
             }
         }
 
         function resetCamera() {
-            camera.position.set(0, -180, 160);
+            camera.position.set(-30, -190, 150);
             controls.target.set(0, 42, 0);
         }
 

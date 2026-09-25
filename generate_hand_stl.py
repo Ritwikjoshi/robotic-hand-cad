@@ -1,12 +1,11 @@
 """
 Procedural 3D Mesh Generator for 5-Finger Anthropomorphic Robotic Hand
-Featuring organic, anatomically realistic human palm geometry:
-- Carpal cup (palmar concavity)
-- Thenar eminence (prominent thumb ball muscle mound)
-- Hypothenar eminence (pinky side muscle mound)
-- Transverse metacarpal arch (knuckle cascade curve)
-- Distal palmar cushions (metacarpal pads below knuckles)
-- Smooth organic convex hulls & watertight CSG
+Biomechanical Expert Revision:
+- Anatomically accurate Thumb Carpometacarpal (CMC) saddle-joint orientation:
+  * Rotated ~45° palmar abduction (projecting forward out of the palm plane)
+  * Pronation/opposition angle ~30° so the thumb pulp naturally opposes the index & middle finger pulps
+  * Proper anatomical resting clearance (no collision with palm or index side)
+- Realistic 5-digit grasp kinematics and watertight STL mesh generation.
 """
 
 import os
@@ -132,33 +131,30 @@ def generate_proximal_phalanx(length=38.0, width=15.0, height=13.0):
 
 def generate_palm(palm_w=74.0, palm_l=84.0, palm_h=21.0):
     """
-    Sculpts an anatomically realistic human palm:
-    - Transverse Metacarpal Knuckle Arch: Index/Pinky slope backward & curve.
-    - Thenar Mound (ball of thumb muscle): Full, rounded, bulbous palm base.
-    - Hypothenar Mound: Lateral pinky muscular cushion.
-    - Metacarpal Heads: Smooth rounded pads across base of digits.
-    - Central Palmar Hollow: Natural ergonomic concavity.
+    Sculpts realistic human palm with biomechanically corrected Thumb CMC saddle boss:
+    - Base of thumb originates lower near wrist (carpal trapezial region).
+    - CMC joint angles forward (palmar abduction) & inward (pronation), facing index/middle digits.
     """
-    # 1. Carpal base (wrist transition bulb)
     wrist_base = icosphere(subdivisions=3, radius=1.0)
     wrist_base.apply_scale([palm_w * 0.38, 14.0, palm_h * 0.44])
     wrist_base.apply_translation([0, 10.0, 0])
 
-    # 2. Thenar Eminence (Thumb muscle fleshy dome)
+    # Thenar Eminence (Thumb ball muscular mound - accurately placed at lower-lateral palm)
     thenar = icosphere(subdivisions=3, radius=1.0)
-    thenar.apply_scale([17.0, 24.0, 12.0])
-    rot_thenar = trimesh.transformations.euler_matrix(0.22, 0.48, -0.58)
+    thenar.apply_scale([18.0, 22.0, 14.0])
+    # Trapeziometacarpal orientation
+    rot_thenar = trimesh.transformations.euler_matrix(0.40, 0.45, -0.65)
     thenar.apply_transform(rot_thenar)
-    thenar.apply_translation([-palm_w * 0.34, palm_l * 0.36, -1.5])
+    thenar.apply_translation([-palm_w * 0.36, palm_l * 0.28, -2.0])
 
-    # 3. Hypothenar Eminence (Pinky side cushion)
+    # Hypothenar Eminence
     hypo = icosphere(subdivisions=3, radius=1.0)
     hypo.apply_scale([13.5, 26.0, 10.5])
     hypo.apply_translation([palm_w * 0.36, palm_l * 0.40, -1.8])
 
-    # 4. Transverse Knuckle Arch (4 rounded metacarpal knuckle mounds)
+    # 4 Knuckle mounds across cascade arch
     finger_x = [-23.0, -8.0, 8.0, 23.0]
-    knuckle_y = [palm_l - 2.5, palm_l, palm_l - 1.2, palm_l - 3.8] # Natural human cascade
+    knuckle_y = [palm_l - 2.5, palm_l, palm_l - 1.2, palm_l - 3.8]
     knuckle_z = [0.4, 0.8, 0.3, -0.4]
 
     knuckle_spheres = []
@@ -168,24 +164,20 @@ def generate_palm(palm_w=74.0, palm_l=84.0, palm_h=21.0):
         ks.apply_translation([fx, fy - 6.0, fz])
         knuckle_spheres.append(ks)
 
-    # 5. Distal Palmar Cushion (fleshy transverse ridge just below knuckles)
     distal_ridge = cylinder(radius=palm_h * 0.36, height=palm_w * 0.78, sections=32)
     distal_ridge.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     distal_ridge.apply_translation([0, palm_l - 16.0, -palm_h * 0.16])
 
-    # 6. Anatomical Dorsal Core (dorsal skin of hand)
     dorsal_core = icosphere(subdivisions=3, radius=1.0)
     dorsal_core.apply_scale([palm_w * 0.44, palm_l * 0.42, palm_h * 0.36])
     dorsal_core.apply_translation([0, palm_l * 0.48, palm_h * 0.12])
 
-    # Build anatomical palm body via union and convex hull
     all_palm_parts = [wrist_base, thenar, hypo, distal_ridge, dorsal_core] + knuckle_spheres
     palm_hull = trimesh.boolean.union(all_palm_parts).convex_hull
 
-    # Subtractive Features (Joint Clevises, Tendon tunnels, Cavity, Wrist mount)
     cutters = []
 
-    # 4 Finger knuckle clevis slots & pin holes
+    # 4 Finger knuckle clevis slots
     for fx, fy, fz in zip(finger_x, knuckle_y, knuckle_z):
         c_slot = box(extents=[4.8, 16.0, palm_h + 4.0])
         c_slot.apply_translation([fx, fy - 1.0, fz])
@@ -201,24 +193,36 @@ def generate_palm(palm_w=74.0, palm_l=84.0, palm_h=21.0):
         t_tun.apply_translation([fx, fy - 14.0, fz - 3.5])
         cutters.append(t_tun)
 
-    # Thumb CMC Clevis Socket
+    # Biomechanically accurate Thumb CMC joint socket:
+    # Position: Base of Thenar eminence
+    # Rotation: ~45° palmar inclination + 35° internal rotation
+    th_pos = [-palm_w * 0.36 - 2.5, palm_l * 0.28, -2.0]
+    rot_thumb_cmc = trimesh.transformations.euler_matrix(0.45, 0.50, -0.65)
+
     th_slot = box(extents=[5.5, 18.0, 22.0])
-    th_slot.apply_transform(rot_thenar)
-    th_slot.apply_translation([-palm_w * 0.34 - 3, palm_l * 0.36, -1.5])
+    th_slot.apply_transform(rot_thumb_cmc)
+    th_slot.apply_translation(th_pos)
     cutters.append(th_slot)
 
     th_pin = cylinder(radius=1.65, height=24.0, sections=24)
     th_pin.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    th_pin.apply_transform(rot_thenar)
-    th_pin.apply_translation([-palm_w * 0.34 - 3, palm_l * 0.36, -1.5])
+    th_pin.apply_transform(rot_thumb_cmc)
+    th_pin.apply_translation(th_pos)
     cutters.append(th_pin)
 
-    # Internal hollow cavity for servo wires & tendon routing
-    cavity = box(extents=[palm_w * 0.58, palm_l * 0.46, palm_h * 0.68])
+    # Tendon bore into palm interior
+    th_tendon = cylinder(radius=1.4, height=26.0, sections=16)
+    th_tendon.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    th_tendon.apply_transform(rot_thumb_cmc)
+    th_tendon.apply_translation([th_pos[0] + 5, th_pos[1] - 8, th_pos[2]])
+    cutters.append(th_tendon)
+
+    # Internal hollow cavity
+    cavity = box(extents=[palm_w * 0.56, palm_l * 0.44, palm_h * 0.65])
     cavity.apply_translation([0, palm_l * 0.44, 0])
     cutters.append(cavity)
 
-    # Central palmar shallow depression / hollow (cup of the hand)
+    # Central palmar shallow depression
     palm_cup = icosphere(subdivisions=3, radius=1.0)
     palm_cup.apply_scale([palm_w * 0.22, palm_l * 0.22, 6.0])
     palm_cup.apply_translation([0, palm_l * 0.45, -palm_h * 0.50])
@@ -240,7 +244,7 @@ def generate_palm(palm_w=74.0, palm_l=84.0, palm_h=21.0):
     return palm_hull.difference(cutter_all)
 
 def assemble_hand():
-    """Generates the full assembly with anatomically realistic human palm & curved fingers."""
+    """Generates the full assembly with biomechanically corrected opposable thumb kinematics."""
     print("Generating Anatomical Human Palm...")
     palm = generate_palm()
     palm.export(os.path.join(STL_DIR, "palm.stl"))
@@ -256,15 +260,15 @@ def assemble_hand():
 
     components = [palm]
 
-    # 4 Main fingers with anatomical curvature matching the palm's metacarpal arch
+    # 4 Main fingers with anatomical curvature
     scales = [0.90, 1.00, 0.92, 0.78]   # Index, Middle, Ring, Pinky
     x_positions = [-23.0, -8.0, 8.0, 23.0]
     knuckle_y = [84.0 - 2.5, 84.0, 84.0 - 1.2, 84.0 - 3.8]
     knuckle_z = [0.4, 0.8, 0.3, -0.4]
     angles_z = [0.07, 0.02, -0.04, -0.10]
-    flex_mcp = [0.35, 0.30, 0.32, 0.38]
-    flex_pip = [0.45, 0.40, 0.42, 0.48]
-    flex_dip = [0.28, 0.25, 0.28, 0.30]
+    flex_mcp = [0.32, 0.28, 0.30, 0.34]
+    flex_pip = [0.42, 0.38, 0.40, 0.44]
+    flex_dip = [0.25, 0.22, 0.25, 0.28]
 
     for i in range(4):
         s = scales[i]
@@ -286,23 +290,37 @@ def assemble_hand():
 
         components.append(finger_full)
 
-    # Opposable Thumb (located on the thenar mound)
-    print("Assembling Rounded Opposable Thumb on Thenar Mound...")
+    # Biomechanically Corrected Thumb:
+    # Natural human resting posture:
+    # 1. Thumb Metacarpal emerges from thenar base (~30mm from wrist).
+    # 2. Angle: Projects ~40° palmar abduction (out of palm plane) & 35° radial abduction.
+    # 3. Pronated 40° so the thumb pad faces the finger pads (true opposition).
+    print("Assembling Biomechanically Corrected Opposable Thumb...")
     th_p = generate_proximal_phalanx(length=32.0, width=15.0, height=13.0)
     th_d = generate_distal_phalanx(length=26.0, width=14.0, height=11.5)
 
-    th_d.apply_transform(trimesh.transformations.rotation_matrix(0.4, [1, 0, 0]))
+    # Slight flexion at Interphalangeal (IP) joint
+    th_d.apply_transform(trimesh.transformations.rotation_matrix(0.35, [1, 0, 0]))
     th_d.apply_translation([0, 32.0, 0])
 
     thumb_full = trimesh.util.concatenate([th_p, th_d])
-    thumb_full.apply_transform(trimesh.transformations.euler_matrix(0.32, 0.52, -0.62))
-    thumb_full.apply_translation([-74.0 * 0.34 - 3, 84.0 * 0.36, -1.5])
+    
+    # Slight flexion at Metacarpophalangeal (MCP) joint
+    thumb_full.apply_transform(trimesh.transformations.rotation_matrix(0.30, [1, 0, 0]))
+
+    # Compound Carpometacarpal (CMC) saddle orientation:
+    # [palmar_abduction_X, radial_tilt_Y, pronation_opposition_Z]
+    rot_cmc = trimesh.transformations.euler_matrix(0.55, 0.45, -0.75)
+    thumb_full.apply_transform(rot_cmc)
+
+    # Attach at lower thenar base
+    thumb_full.apply_translation([-74.0 * 0.36 - 2.5, 84.0 * 0.28, -2.0])
     components.append(thumb_full)
 
     print("Merging complete full assembly...")
     full_assembly = trimesh.util.concatenate(components)
     full_assembly.export(os.path.join(STL_DIR, "robotic_hand_full_assembly.stl"))
-    print("Success! All realistic human hand STL files regenerated in:", STL_DIR)
+    print("Success! All biomechanically realistic hand STL files regenerated in:", STL_DIR)
 
 if __name__ == "__main__":
     assemble_hand()
