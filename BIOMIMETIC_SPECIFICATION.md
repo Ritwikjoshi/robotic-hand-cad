@@ -1,28 +1,33 @@
-# TECHNICAL SPECIFICATION: BIOMIMETIC MUSCULOSKELETAL HAND PLATFORM
+# TECHNICAL SPECIFICATION: BIOMIMETIC TENDON-DRIVEN SERVO HAND PLATFORM
 
 ---
 
 ## 1. System Architecture & Core Specifications
 
-The platform is a fully biomimetic end-effector designed to mirror human musculoskeletal anatomy. It replaces traditional motor-and-gear configurations with a hydraulic artificial muscle network integrated directly with composite skeletal structures.
+The platform is a fully biomimetic end-effector designed to mirror human musculoskeletal anatomy. It utilizes high-torque digital coreless micro-servo motors coupled to low-friction braided Dyneema/UHMWPE tendon cables and passive elastic antagonistic return bands, integrated directly with precision composite/3D-printed skeletal structures.
 
 | Technical Parameter | Specification Value |
 | --- | --- |
 | **Degrees of Freedom (DoF)** | 27 DoF (Exact anatomical parity with the human hand) |
-| **Actuation Mechanism** | Hydraulic Artificial Muscle Fibers (approx. 36 individual units) |
-| **Total Assembly Weight** | < 2 lbs (~900 g) |
-| **Max Grip Force** | ~6.8 kg (15 lbs) |
-| **Structural Framework** | Molded carbon-fiber/composite bones with ligament-like tethers |
+| **Actuation Mechanism** | High-Torque Micro-Servo Actuators with Tendon Bowden-Routing |
+| **Servo Units / Channels** | Modular 16–24 Channel Forearm / Chassis Servo Bank |
+| **Total Assembly Weight** | < 2 lbs (~880 g) including motors and brackets |
+| **Max Grip Force** | ~6.8 kg (15 lbs) cumulative fingertip power grasp |
+| **Structural Framework** | Molded carbon-fiber/PEEK or tough engineering resin bones |
+| **Tendon Tensile Rating** | 50–80 lb (220–350 N) braided UHMWPE Dyneema (Ø0.8–1.0 mm) |
 | **Fatigue Threshold** | 650,000+ active operational cycles |
 
 ---
 
-## 2. Actuation & Hydraulic Infrastructure
+## 2. Actuation & Tendon-Driven Servo Infrastructure
 
-* **Artificial Muscle Design:** Utilizes high-performance McKibben-style fluid-driven mesh actuators. Fluid injection forces radial expansion and longitudinal contraction.
-* **Antagonistic Layout:** Joints are driven by opposing pairs of muscle fibers (flexors and extensors), creating inherent compliance, passive shock absorption, and full back-drivability without software-heavy impedance loops.
-* **Contraction Dynamics:** Individual muscle fibers weigh approximately 3 grams, generate roughly 1 kg of linear force, and achieve contraction response times of **under 50 milliseconds**.
-* **Fluid Power Subsystem:** Driven by a compact internal pump routing fluid through an array of fast-switching electro-hydraulic valves governed by integrated pressure monitoring.
+* **Servo Motor Architecture:** High-torque metal-gear micro servos (e.g., KST DS215MG / KingMax CLS0612W / MG90S Digital Coreless) operating at 6.0V–8.4V.
+* **Tendon Spool / Winch Horns:** CNC aluminum or high-strength resin spools (Ø10–14 mm) delivering high linear force and precise tendon displacement (up to 28 mm active stroke).
+* **Antagonistic Compliance & Elastic Return:**
+  - Active flexor pull driven by dedicated servo motors.
+  - High-cycle silicone/nitrile elastomer bands or dual-rate helical torsion springs on dorsal joint hinges provide instant extension return, passive shock compliance, and back-drivability.
+* **Tendon Bowden Routing:** Low-friction PTFE liners (OD 2.0 mm, ID 1.0 mm) pass through the wrist articulation gimbal, preserving zero cable length variance during wrist pitch, yaw, and roll movements.
+* **Response Dynamics:** High-speed servo latency under **40 milliseconds** with position accuracy of ±0.15°.
 
 ---
 
@@ -30,40 +35,43 @@ The platform is a fully biomimetic end-effector designed to mirror human musculo
 
 The 27 DoF layout maps directly to human anatomical articulation:
 
-* **Thumb (5 DoF):** Complete carpometacarpal (CMC) articulation, including opposition, abduction, adduction, flexion, and extension (CMC 2-DoF + MCP 2-DoF [flex/ext, ab/ad] + IP 1-DoF).
-* **Digits (4 DoF per finger × 4 = 16 DoF):** Encompasses metacarpophalangeal (MCP) flexion/extension and side-to-side abduction/adduction (2-DoF), alongside proximal (PIP 1-DoF) and distal (DIP 1-DoF) interphalangeal joint curling.
-* **Palm Geometry (2 DoF):** Features a flexible, bowl-shaped palmar arch that deforms organically around objects, differing from rigid rectangular block palms (4th & 5th metacarpal cupping / palmar arch folding).
+* **Thumb (5 DoF):** Complete carpometacarpal (CMC 2-DoF: palmar abduction/adduction + true opposition/circumduction), condyloid metacarpophalangeal (MCP 2-DoF: flexion/extension + abduction), and interphalangeal (IP 1-DoF: flexion/extension).
+* **Digits (4 DoF per finger × 4 = 16 DoF):** Metacarpophalangeal (MCP 2-DoF: flexion/extension + lateral abduction/adduction), proximal interphalangeal (PIP 1-DoF), and distal interphalangeal (DIP 1-DoF) curling.
+* **Palm Geometry (2 DoF):** Organic bowl-shaped folding palmar arch allowing active 4th & 5th metacarpal cupping and adaptive thenar compliance.
 * **Wrist Interface (4 DoF):** Flexion, extension, radial/ulnar deviation, combined with structural forearm pronation and supination.
 
 ---
 
-## 4. Control Systems & Motion Processing
+## 4. Control Systems & Electronics
 
-* **Neural Controller Integration:** Employs advanced neural network architectures trained on dense datasets of human hand-tracking and video streams.
-* **Intent-to-Motion Mapping:** Bypasses hardcoded inverse kinematics matrices by translating real-time trajectory inputs directly into fluid-valve dynamics.
-* **Proprioceptive Feedback:** Integrated pressure and flow sensors yield closed-loop data streams, enabling dynamic force modulation and adaptive grip adjustments during contact.
+* **Servo Controller Integration:** 16–24 Channel 12-bit PWM PCA9685 / CAN-Bus / UART Bus servo driver boards linked to an onboard ESP32-S3 or ARM Cortex-M4 microcontroller.
+* **Current & Force Monitoring:** Integrated per-channel shunt current sensing allows closed-loop stall prevention, grip force regulation, and object contact detection.
+* **Magnetic Encoders:** Contactless AS5600 absolute magnetic angle encoders positioned at the MCP and CMC joint hinges provide real-time angular telemetry.
+* **Neural / Teleoperation Controller:** Maps vision-based human hand tracking and intent trajectories directly into coordinated multi-channel PWM pulse widths without kinematic singularities.
 
 ---
 
-## 5. 36-Muscle Antagonistic Hydraulic Mapping
+## 5. Tendon & Servo Channel Mapping Table
 
-| Muscle ID | Functional Group | Origin Location | Insertion Location | Action / DoF Actuated |
+| Channel ID | Muscle Group Equivalence | Servo Location | Joint / DoF Actuated | Motion Range |
 |---|---|---|---|---|
-| **M01 - M02** | FDP / FDS Index Flexors | Volar forearm / proximal palm | Index middle/distal phalanges | Index PIP & DIP Flexion |
-| **M03 - M04** | EDC / EIP Index Extensors | Dorsal forearm / carpal manifold | Index proximal/intermediate extensor hood | Index MCP & PIP Extension |
-| **M05 - M06** | 1st DI / 1st PI Index Interossei | 1st & 2nd Metacarpals | Lateral/medial Index proximal tubercle | Index Abduction & Adduction |
-| **M07 - M08** | FDP / FDS Middle Flexors | Volar forearm / proximal palm | Middle middle/distal phalanges | Middle PIP & DIP Flexion |
-| **M09 - M10** | EDC Middle Extensors | Dorsal forearm / carpal manifold | Middle extensor hood | Middle MCP & PIP Extension |
-| **M11 - M12** | 2nd & 3rd DI Middle Interossei | 2nd & 3rd Metacarpals | Radial/ulnar Middle proximal base | Middle Radial/Ulnar Deviation |
-| **M13 - M14** | FDP / FDS Ring Flexors | Volar forearm / proximal palm | Ring middle/distal phalanges | Ring PIP & DIP Flexion |
-| **M15 - M16** | EDC Ring Extensors | Dorsal forearm / carpal manifold | Ring extensor hood | Ring MCP & PIP Extension |
-| **M17 - M18** | 2nd PI / 4th DI Ring Interossei | 3rd & 4th Metacarpals | Medial/lateral Ring proximal base | Ring Abduction & Adduction |
-| **M19 - M20** | FDP / FDS Pinky Flexors | Volar forearm / proximal palm | Pinky middle/distal phalanges | Pinky PIP & DIP Flexion |
-| **M21 - M22** | EDC / EDM Pinky Extensors | Dorsal forearm / carpal manifold | Pinky extensor hood | Pinky MCP & PIP Extension |
-| **M23 - M24** | ADM / ODM Pinky Abductor/Opponent | Pisiform / flexor retinaculum | 5th Metacarpal / proximal phalanx | Pinky Abduction & Palmar Arch Cupping |
-| **M25 - M26** | FPL / FPB Thumb Flexors | Volar radius & flexor retinaculum | Thumb distal phalanx & proximal phalanx | Thumb IP & MCP Flexion |
-| **M27 - M28** | EPL / EPB Thumb Extensors | Dorsal radius/ulna | Thumb distal & proximal phalanges | Thumb IP & MCP Extension |
-| **M29 - M30** | APB / Opponens Pollicis | Scaphoid / trapezium ridge | 1st Metacarpal radial border | Thumb Palmar Abduction & Opposition |
-| **M31 - M32** | Adductor Pollicis (Oblique/Transverse) | 3rd Metacarpal shaft | Ulnar tubercle of Thumb proximal phalanx | Thumb Adduction & Power Pinch |
-| **M33 - M34** | Wrist Flexors / Extensors (FCR/ECR) | Distal forearm structural chassis | 2nd & 3rd Metacarpal bases | Wrist Flexion / Extension |
-| **M35 - M36** | Wrist Deviators & Rotators (FCU/ECU) | Forearm radial/ulnar margins | Pisiform / 5th Metacarpal base | Wrist Radial/Ulnar Deviation & Pronation Assist |
+| **CH01** | Flexor Digitorum Profundus (Index) | Forearm Bay 1 | Index PIP & DIP Flexion | $0^\circ - 180^\circ$ |
+| **CH02** | 1st Dorsal Interosseous (Index) | Palm / Forearm Bay 2 | Index MCP Abduction / Lateral Spread | $-15^\circ - +15^\circ$ |
+| **CH03** | Flexor Digitorum Superficialis (Index) | Forearm Bay 3 | Index MCP Flexion / Grip Pre-curl | $0^\circ - 90^\circ$ |
+| **CH04** | Flexor Digitorum Profundus (Middle) | Forearm Bay 4 | Middle PIP & DIP Flexion | $0^\circ - 185^\circ$ |
+| **CH05** | 2nd & 3rd Interossei (Middle) | Palm / Forearm Bay 5 | Middle Radial/Ulnar Deviation | $-10^\circ - +10^\circ$ |
+| **CH06** | Flexor Digitorum Superficialis (Middle) | Forearm Bay 6 | Middle MCP Flexion | $0^\circ - 90^\circ$ |
+| **CH07** | Flexor Digitorum Profundus (Ring) | Forearm Bay 7 | Ring PIP & DIP Flexion | $0^\circ - 185^\circ$ |
+| **CH08** | Interossei (Ring) | Palm / Forearm Bay 8 | Ring MCP Abduction / Spread | $-12^\circ - +12^\circ$ |
+| **CH09** | Flexor Digitorum Superficialis (Ring) | Forearm Bay 9 | Ring MCP Flexion | $0^\circ - 90^\circ$ |
+| **CH10** | Flexor Digitorum Profundus (Pinky) | Forearm Bay 10 | Pinky PIP & DIP Flexion | $0^\circ - 180^\circ$ |
+| **CH11** | Abductor Digiti Minimi (Pinky) | Forearm Bay 11 | Pinky MCP Abduction / Spread | $-15^\circ - +15^\circ$ |
+| **CH12** | Opponens Digiti Minimi (Palmar Arch) | Palm Base / Forearm Bay 12 | 4th/5th Metacarpal Cupping | $0^\circ - 30^\circ$ |
+| **CH13** | Flexor Pollicis Longus (Thumb IP) | Forearm Bay 13 | Thumb Terminal IP Flexion | $0^\circ - 85^\circ$ |
+| **CH14** | Flexor Pollicis Brevis (Thumb MCP) | Forearm Bay 14 | Thumb MCP Flexion | $0^\circ - 60^\circ$ |
+| **CH15** | Opponens Pollicis (Thumb CMC) | Forearm Bay 15 | Thumb Pronation / Opposition | $-30^\circ - +40^\circ$ |
+| **CH16** | Abductor Pollicis Brevis (Thumb CMC) | Forearm Bay 16 | Thumb Palmar Abduction | $0^\circ - 60^\circ$ |
+| **CH17** | Adductor Pollicis (Thumb Power) | Palm Bay 17 | Thumb Transverse Adduction Pinch | $0^\circ - 35^\circ$ |
+| **CH18** | Flexor Carpi Radialis / Ulnaris | Forearm Mount A | Wrist Flexion / Extension Pitch | $-45^\circ - +45^\circ$ |
+| **CH19** | Extensor Carpi Radialis / Ulnaris | Forearm Mount B | Wrist Radial / Ulnar Yaw | $-35^\circ - +35^\circ$ |
+| **CH20** | Pronator Teres / Quadratus | Forearm Mount C | Forearm Pronation / Supination Roll | $-85^\circ - +85^\circ$ |

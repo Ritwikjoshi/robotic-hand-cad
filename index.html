@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomimetic Musculoskeletal Hand Platform - 27 DoF Hydraulic Artificial Muscle Network</title>
+    <title>Biomimetic Musculoskeletal Hand Platform - 27 DoF Servo-Driven Tendon Network</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -215,7 +215,7 @@
 
     <div class="hud-overlay header-title">
         <h1>Biomimetic Musculoskeletal Hand (27 DoF)</h1>
-        <p>36× Hydraulic McKibben Artificial Muscles · Carbon-Composite Skeleton · Antagonistic Compliance</p>
+        <p>High-Torque Digital Servo Actuators · Dyneema Tendon Network · Carbon-Composite Skeleton</p>
     </div>
 
     <div class="hud-overlay control-panel">
@@ -295,7 +295,7 @@
         <div class="panel-section">
             <div class="section-title">Visual Layers & Muscle Net</div>
             <div class="btn-grid">
-                <button onclick="toggleMuscles()" id="btn-muscles" class="active">Muscles (36x)</button>
+                <button onclick="toggleServos()" id="btn-servos" class="active">Servos & Tendons</button>
                 <button onclick="toggleWireframe()" id="btn-wire">Wireframe</button>
                 <button onclick="toggleExploded()" id="btn-explode">Exploded</button>
                 <button onclick="toggleTheme()" id="btn-theme">Carbon Matrix</button>
@@ -307,12 +307,13 @@
             <div class="section-title">Biomimetic Platform Specs</div>
             <table class="specs-table">
                 <tr><td>Degrees of Freedom</td><td>27 DoF (Anatomical Parity)</td></tr>
-                <tr><td>Actuation Network</td><td>36× Hydraulic McKibben Fibers</td></tr>
-                <tr><td>Grip Force (Nominal)</td><td>6.8 kg (15 lbs) Antagonistic</td></tr>
-                <tr><td>Fiber Weight / Speed</td><td>3g / fiber | &lt; 50 ms response</td></tr>
+                <tr><td>Actuation Mechanism</td><td>Digital Coreless Metal-Gear Servos</td></tr>
+                <tr><td>Tendon Material</td><td>Dyneema / UHMWPE (50-80 lb)</td></tr>
+                <tr><td>Grip Force (Nominal)</td><td>~6.8 kg (15 lbs) Cumulative</td></tr>
+                <tr><td>Response Latency</td><td>&lt; 40 ms High-Speed PWM</td></tr>
                 <tr><td>Skeletal Framework</td><td>Carbon-PEEK Composite + Ligaments</td></tr>
-                <tr><td>Sensory Feedback</td><td>Closed-Loop Pressure & Angle Arrays</td></tr>
-                <tr><td>Fatigue Threshold</td><td>650,000+ Cycles (Zero Backlash)</td></tr>
+                <tr><td>Sensory Feedback</td><td>AS5600 Angle + Current Sensing</td></tr>
+                <tr><td>Fatigue Threshold</td><td>650,000+ Cycles</td></tr>
             </table>
         </div>
     </div>
@@ -326,11 +327,11 @@
         let palmGroup;
         let wristGroup;
         let ulnarPalmGroup;
-        let muscleGroup;
+        let servoTendonGroup;
         let isWireframe = false;
         let isExploded = false;
         let isBioLook = false;
-        let showMuscles = true;
+        let showServos = true;
 
         const PALM_W = 74;
         const PALM_L = 84;
@@ -360,19 +361,33 @@
             metalness: 0.95
         });
 
-        // Biomimetic McKibben Hydraulic Artificial Muscle Materials
-        const matMuscle = new THREE.MeshStandardMaterial({
-            color: 0xef4444,
-            roughness: 0.35,
-            metalness: 0.25,
-            wireframe: false
+        // High-Torque Digital Servo & Dyneema Tendon Materials
+        const matServoCase = new THREE.MeshStandardMaterial({
+            color: 0x1e293b,
+            roughness: 0.45,
+            metalness: 0.65
         });
 
-        const matMuscleExtensor = new THREE.MeshStandardMaterial({
+        const matServoHorn = new THREE.MeshStandardMaterial({
+            color: 0x0284c7,
+            roughness: 0.30,
+            metalness: 0.85
+        });
+
+        const matTendonLine = new THREE.MeshStandardMaterial({
             color: 0x38bdf8,
-            roughness: 0.35,
-            metalness: 0.25,
-            wireframe: false
+            roughness: 0.20,
+            metalness: 0.10,
+            transparent: true,
+            opacity: 0.88
+        });
+
+        const matTendonExtensor = new THREE.MeshStandardMaterial({
+            color: 0xf43f5e,
+            roughness: 0.20,
+            metalness: 0.10,
+            transparent: true,
+            opacity: 0.88
         });
 
         const matLigament = new THREE.MeshStandardMaterial({
@@ -492,32 +507,59 @@
         }
 
         
-        function createMcKibbenMuscle(startVec, endVec, isExtensor = false, radius = 1.8) {
+        function createMicroServo(pos, rotZ = 0) {
+            const sGroup = new THREE.Group();
+            sGroup.position.copy(pos);
+            sGroup.rotation.z = rotZ;
+
+            // Servo Main Body (12 x 23 x 24 mm standard micro servo)
+            const bodyGeom = new THREE.BoxGeometry(11, 22.5, 23);
+            const bodyMesh = new THREE.Mesh(bodyGeom, matServoCase);
+            sGroup.add(bodyMesh);
+
+            // Servo Mounting Flange / Tabs
+            const flangeGeom = new THREE.BoxGeometry(12, 31, 2.5);
+            flangeGeom.translate(0, 0, 7.5);
+            const flangeMesh = new THREE.Mesh(flangeGeom, matServoCase);
+            sGroup.add(flangeMesh);
+
+            // Output Gear Spindle & Winch Spool
+            const spoolGeom = new THREE.CylinderGeometry(4.8, 4.8, 4.5, 18);
+            spoolGeom.rotateX(Math.PI / 2);
+            spoolGeom.translate(0, 6, 13);
+            const spoolMesh = new THREE.Mesh(spoolGeom, matServoHorn);
+            sGroup.add(spoolMesh);
+
+            // Winch Horn Arms
+            const hornGeom = new THREE.BoxGeometry(14, 3, 2);
+            hornGeom.translate(0, 6, 15);
+            const hornMesh = new THREE.Mesh(hornGeom, matServoHorn);
+            sGroup.add(hornMesh);
+
+            return sGroup;
+        }
+
+        function createTendonRoute(startVec, endVec, isExtensor = false, radius = 0.55) {
             const group = new THREE.Group();
             const dir = new THREE.Vector3().subVectors(endVec, startVec);
             const len = dir.length();
             const mid = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5);
 
-            // Biconical braided muscle fiber belly
-            const geom = new THREE.CylinderGeometry(radius * 0.65, radius, len * 0.85, 12, 4);
-            const mesh = new THREE.Mesh(geom, isExtensor ? matMuscleExtensor : matMuscle);
+            // High-tensile braided Dyneema tendon line
+            const geom = new THREE.CylinderGeometry(radius, radius, len, 8);
+            const mesh = new THREE.Mesh(geom, isExtensor ? matTendonExtensor : matTendonLine);
 
-            // Align cylinder with vector
             const axis = new THREE.Vector3(0, 1, 0);
             mesh.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
             mesh.position.copy(mid);
             group.add(mesh);
 
-            // Tendon/hydraulic fitting collar at ends
-            const collarGeom = new THREE.CylinderGeometry(radius * 0.75, radius * 0.75, len * 0.12, 10);
-            const c1 = new THREE.Mesh(collarGeom, matPin);
-            c1.quaternion.copy(mesh.quaternion);
-            c1.position.copy(startVec).add(dir.clone().normalize().multiplyScalar(len * 0.06));
-            const c2 = new THREE.Mesh(collarGeom, matPin);
-            c2.quaternion.copy(mesh.quaternion);
-            c2.position.copy(endVec).sub(dir.clone().normalize().multiplyScalar(len * 0.06));
-            group.add(c1);
-            group.add(c2);
+            // Eyelet / Fairlead Ring at termination
+            const ringGeom = new THREE.TorusGeometry(radius * 1.5, radius * 0.45, 8, 16);
+            ringGeom.rotateX(Math.PI / 2);
+            const rMesh = new THREE.Mesh(ringGeom, matPin);
+            rMesh.position.copy(endVec);
+            group.add(rMesh);
 
             return group;
         }
@@ -577,93 +619,97 @@
             wristGroup = new THREE.Group();
             wristGroup.position.set(0, -18, 0);
 
-            // Forearm Composite Hydraulic Housing & Fluid Manifold
-            const forearmGeom = new THREE.CylinderGeometry(20, 24, 75, 32);
-            forearmGeom.translate(0, -37.5, 0);
+            // Forearm Modular Servo Bay & PCA9685 Driver Chassis
+            const forearmGeom = new THREE.CylinderGeometry(23, 25, 82, 32);
+            forearmGeom.translate(0, -41, 0);
             const forearmMesh = new THREE.Mesh(forearmGeom, matChassis);
             wristGroup.add(forearmMesh);
 
-            // Hydraulic valve manifold block
-            const manifoldGeom = new THREE.BoxGeometry(28, 48, 22);
-            manifoldGeom.translate(0, -36, 0);
-            const manifoldMesh = new THREE.Mesh(manifoldGeom, matBioBone);
-            wristGroup.add(manifoldMesh);
+            // Servo Mount Bracket Rack
+            const rackGeom = new THREE.BoxGeometry(32, 54, 26);
+            rackGeom.translate(0, -40, 0);
+            const rackMesh = new THREE.Mesh(rackGeom, matBioBone);
+            wristGroup.add(rackMesh);
 
             wristGroup.add(palmGroup);
             scene.add(wristGroup);
 
             // =========================================================================
-            // 36-UNIT ANTAGONISTIC HYDRAULIC ARTIFICIAL MUSCLE NETWORK
+            // HIGH-TORQUE DIGITAL SERVO ACTUATOR BANK & TENDON NETWORK
             // =========================================================================
-            muscleGroup = new THREE.Group();
+            servoTendonGroup = new THREE.Group();
 
-            // 1. Forearm Flexors & Extensors (M01 - M16): Extensor (dorsal) & Flexor (volar)
+            // 1. Forearm Modular Servo Bank (Array of micro-servos in dual column)
+            const servoConfigs = [
+                { pos: new THREE.Vector3(-8, -24, 0), rotZ: 0 },
+                { pos: new THREE.Vector3( 8, -24, 0), rotZ: 0 },
+                { pos: new THREE.Vector3(-8, -42, 0), rotZ: 0 },
+                { pos: new THREE.Vector3( 8, -42, 0), rotZ: 0 },
+                { pos: new THREE.Vector3(-8, -60, 0), rotZ: 0 },
+                { pos: new THREE.Vector3( 8, -60, 0), rotZ: 0 }
+            ];
+            servoConfigs.forEach(cfg => {
+                servoTendonGroup.add(createMicroServo(cfg.pos, cfg.rotZ));
+            });
+
+            // 2. High-Tensile Dyneema Tendon Routing to 4 Digits
             const fingerAnchors = [
-                { name: 'index',  fx: -22, dx: -22, fz: -8, dz: 8,  topY: PALM_L - 6 },
-                { name: 'middle', fx: -7,  dx: -7,  fz: -8, dz: 9,  topY: PALM_L - 2 },
-                { name: 'ring',   fx: 8,   dx: 8,   fz: -8, dz: 8,  topY: PALM_L - 4 },
-                { name: 'pinky',  fx: 22,  dx: 22,  fz: -7, dz: 7,  topY: PALM_L - 8 }
+                { name: 'index',  fx: -22, fz: -7, topY: PALM_L - 6, spoolPos: new THREE.Vector3(-8, -24, 13) },
+                { name: 'middle', fx: -7,  fz: -7, topY: PALM_L - 2, spoolPos: new THREE.Vector3( 8, -24, 13) },
+                { name: 'ring',   fx: 8,   fz: -7, topY: PALM_L - 4, spoolPos: new THREE.Vector3(-8, -42, 13) },
+                { name: 'pinky',  fx: 22,  fz: -6, topY: PALM_L - 8, spoolPos: new THREE.Vector3( 8, -42, 13) }
             ];
 
-            fingerAnchors.forEach((fa, idx) => {
-                // Volar Flexor Fibers (FDP / FDS equivalent)
-                const vStart = new THREE.Vector3(fa.fx * 0.65, -30 - idx * 4, -9);
-                const vEnd   = new THREE.Vector3(fa.fx, fa.topY * 0.5, -7);
-                muscleGroup.add(createMcKibbenMuscle(vStart, vEnd, false, 2.1));
+            fingerAnchors.forEach(fa => {
+                // Volar Flexor Tendon (Spool -> Carpal Tunnel -> Knuckle -> Distal Tip)
+                const pTunnel = new THREE.Vector3(fa.fx * 0.6, 12, fa.fz);
+                const pKnuckle = new THREE.Vector3(fa.fx, fa.topY * 0.55, fa.fz);
+                const pTip = new THREE.Vector3(fa.fx, fa.topY, fa.fz + 2);
 
-                // Volar Distal Tendon Continuation
-                const vEnd2  = new THREE.Vector3(fa.fx, fa.topY, -5);
-                muscleGroup.add(createMcKibbenMuscle(vEnd, vEnd2, false, 1.4));
+                servoTendonGroup.add(createTendonRoute(fa.spoolPos, pTunnel, false, 0.7));
+                servoTendonGroup.add(createTendonRoute(pTunnel, pKnuckle, false, 0.6));
+                servoTendonGroup.add(createTendonRoute(pKnuckle, pTip, false, 0.5));
 
-                // Dorsal Extensor Fibers (EDC equivalent)
-                const dStart = new THREE.Vector3(fa.dx * 0.65, -28 - idx * 4, 9);
-                const dEnd   = new THREE.Vector3(fa.dx, fa.topY * 0.5, 7);
-                muscleGroup.add(createMcKibbenMuscle(dStart, dEnd, true, 2.0));
-
-                // Dorsal Distal Extensor Hood
-                const dEnd2  = new THREE.Vector3(fa.dx, fa.topY, 5);
-                muscleGroup.add(createMcKibbenMuscle(dEnd, dEnd2, true, 1.3));
+                // Dorsal Elastic Return Tendon
+                const dBase = new THREE.Vector3(fa.fx, 15, 6);
+                const dKnuckle = new THREE.Vector3(fa.fx, fa.topY * 0.6, 7);
+                const dTip = new THREE.Vector3(fa.fx, fa.topY, 6);
+                servoTendonGroup.add(createTendonRoute(dBase, dKnuckle, true, 0.5));
+                servoTendonGroup.add(createTendonRoute(dKnuckle, dTip, true, 0.45));
             });
 
-            // 2. Palmar & Dorsal Interossei (M17 - M24): Abduction / Adduction Muscle Units
-            const interosseiPairs = [
-                { s: [-14, 25, 2], e: [-20, 68, 2] },
-                { s: [-4, 25, 2],  e: [-10, 72, 2] },
-                { s: [2, 25, 2],   e: [6, 70, 2] },
-                { s: [12, 25, 2],  e: [19, 66, 2] }
+            // 3. Finger Abduction / Adduction Tendon Lines (Interossei Servos)
+            const abdPairs = [
+                { s: new THREE.Vector3(-12, 28, 2), e: new THREE.Vector3(-21, 68, 2) },
+                { s: new THREE.Vector3(-3, 28, 2),  e: new THREE.Vector3(-9, 72, 2) },
+                { s: new THREE.Vector3(3, 28, 2),   e: new THREE.Vector3(7, 70, 2) },
+                { s: new THREE.Vector3(12, 28, 2),  e: new THREE.Vector3(20, 66, 2) }
             ];
-            interosseiPairs.forEach(p => {
-                const sVec = new THREE.Vector3(p.s[0], p.s[1], p.s[2]);
-                const eVec = new THREE.Vector3(p.e[0], p.e[1], p.e[2]);
-                muscleGroup.add(createMcKibbenMuscle(sVec, eVec, false, 1.5));
-                // Antagonistic lateral pair
-                const sVec2 = new THREE.Vector3(p.s[0], p.s[1], -p.s[2]);
-                const eVec2 = new THREE.Vector3(p.e[0], p.e[1], -p.e[2]);
-                muscleGroup.add(createMcKibbenMuscle(sVec2, eVec2, true, 1.5));
+            abdPairs.forEach(p => {
+                servoTendonGroup.add(createTendonRoute(p.s, p.e, false, 0.5));
             });
 
-            // 3. Thumb Intrinsic & Extrinsic Muscle Group (M25 - M32)
-            // Thenar Opponens Pollicis & Abductor Pollicis
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-10, 10, -4), new THREE.Vector3(-28, 28, -2), false, 2.4));
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-8, 14, 2),  new THREE.Vector3(-27, 34, 4), true, 2.2));
-            // Flexor Pollicis Longus / Brevis
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-15, -25, -7), new THREE.Vector3(-26, 24, -3), false, 2.3));
-            // Extensor Pollicis Longus / Brevis
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-14, -25, 7),  new THREE.Vector3(-25, 26, 4), true, 2.2));
-            // Adductor Pollicis (Transverse & Oblique heads)
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(0, 32, -4), new THREE.Vector3(-24, 30, -3), false, 2.0));
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-2, 22, -3), new THREE.Vector3(-22, 28, -2), false, 1.9));
+            // 4. Thumb Dedicated Tendon Rigging (Flexor, Opponens & Abductor)
+            const thumbServoSpool = new THREE.Vector3(-8, -60, 13);
+            const thumbThenarPort = new THREE.Vector3(-18, 12, -3);
+            const thumbMCP = new THREE.Vector3(-28, 30, -2);
+            const thumbTip = new THREE.Vector3(-26, 52, 2);
 
-            // 4. Wrist & Palmar Arch Actuators (M33 - M36)
-            // Palmar cupping flexor (Hypothenar Opponens Digiti Minimi)
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(12, 10, -3), new THREE.Vector3(26, 38, -3), false, 2.2));
-            // Wrist Radial & Ulnar Deviator Hydraulic Cylinders
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-18, -48, 0), new THREE.Vector3(-16, 2, 0), false, 2.8));
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(18, -48, 0),  new THREE.Vector3(16, 2, 0), false, 2.8));
-            // Pronator / Supinator oblique fiber
-            muscleGroup.add(createMcKibbenMuscle(new THREE.Vector3(-16, -55, 6), new THREE.Vector3(14, -15, 6), true, 2.6));
+            // Flexor Pollicis
+            servoTendonGroup.add(createTendonRoute(thumbServoSpool, thumbThenarPort, false, 0.75));
+            servoTendonGroup.add(createTendonRoute(thumbThenarPort, thumbMCP, false, 0.65));
+            servoTendonGroup.add(createTendonRoute(thumbMCP, thumbTip, false, 0.55));
 
-            palmGroup.add(muscleGroup);
+            // Opponens & Palmar Abductor Tendons
+            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-10, 16, -4), new THREE.Vector3(-27, 34, 4), false, 0.6));
+            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-14, 24, 6),  new THREE.Vector3(-25, 30, 4), true, 0.55));
+
+            // 5. Palmar Cupping Tendon & Wrist Gimbal Linkages
+            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(12, 14, -3), new THREE.Vector3(26, 40, -3), false, 0.65));
+            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-16, -35, 0), new THREE.Vector3(-14, 0, 0), true, 0.8));
+            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(16, -35, 0),  new THREE.Vector3(14, 0, 0), true, 0.8));
+
+            palmGroup.add(servoTendonGroup);
 
             // 4 Digits
             const fingerConfigs = {
@@ -822,10 +868,10 @@
             updateHand();
         }
 
-                function toggleMuscles() {
-            showMuscles = !showMuscles;
-            if (muscleGroup) muscleGroup.visible = showMuscles;
-            document.getElementById('btn-muscles').classList.toggle('active', showMuscles);
+                function toggleServos() {
+            showServos = !showServos;
+            if (servoTendonGroup) servoTendonGroup.visible = showServos;
+            document.getElementById('btn-servos').classList.toggle('active', showServos);
         }
 
         function toggleWireframe() {
