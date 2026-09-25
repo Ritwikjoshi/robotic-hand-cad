@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parametric Anthropomorphic Robotic Hand - Organic Human-like 3D Model</title>
+    <title>Parametric Anthropomorphic Robotic Hand - Realistic Anatomical Model</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -214,8 +214,8 @@
 <body>
 
     <div class="hud-overlay header-title">
-        <h1>Human-Like Robotic Hand</h1>
-        <p>Ergonomically Curved Phalanxes · Fleshy Palmar Pads · 16 DOF</p>
+        <h1>Anatomical Human-Like Robotic Hand</h1>
+        <p>Sculpted Carpal/Thenar Palm · Curved Phalanxes · 16 DOF</p>
     </div>
 
     <div class="hud-overlay control-panel">
@@ -236,12 +236,12 @@
             <div class="section-title">Anatomical Flexion</div>
             
             <div class="slider-group">
-                <div class="slider-label">Thumb (Opposable) <span class="val" id="val-thumb">10°</span></div>
+                <div class="slider-label">Thumb (Opposable) <span class="val" id="val-thumb">12°</span></div>
                 <input type="range" id="slider-thumb" min="0" max="80" value="12" oninput="updateHand()">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label">Index Finger <span class="val" id="val-index">15°</span></div>
+                <div class="slider-label">Index Finger <span class="val" id="val-index">16°</span></div>
                 <input type="range" id="slider-index" min="0" max="90" value="16" oninput="updateHand()">
             </div>
 
@@ -266,19 +266,20 @@
             <div class="btn-grid">
                 <button onclick="toggleWireframe()" id="btn-wire">Wireframe</button>
                 <button onclick="toggleExploded()" id="btn-explode">Exploded View</button>
-                <button onclick="toggleTheme()" id="btn-theme">Bio-Skin Look</button>
+                <button onclick="toggleTheme()" id="btn-theme">Prosthetic Tone</button>
                 <button onclick="resetCamera()">Center Camera</button>
             </div>
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Ergonomic Geometry Specs</div>
+            <div class="section-title">Human Palm Anatomy Specs</div>
             <table class="specs-table">
-                <tr><td>Contour Profile</td><td>Smooth Organic Ellipsoid Hulls</td></tr>
-                <tr><td>Tactile Pads</td><td>High-Friction Convex Pulp Cushions</td></tr>
+                <tr><td>Thenar Mound</td><td>Convex ball of thumb muscle</td></tr>
+                <tr><td>Hypothenar Mound</td><td>Pinky cushion / lateral contour</td></tr>
+                <tr><td>Metacarpal Arch</td><td>Cascading 4-digit transverse curve</td></tr>
+                <tr><td>Palmar Cup</td><td>Central concave gripping hollow</td></tr>
                 <tr><td>Joint Tolerances</td><td>0.30mm (Dowel/Pin Hinge)</td></tr>
-                <tr><td>Wrist Connection</td><td>ISO Robotic Flange 4x M3</td></tr>
-                <tr><td>Tendon Channel</td><td>Ø1.5 mm Low-Friction PTFE/Dyneema</td></tr>
+                <tr><td>Tendon Channel</td><td>Ø1.5 mm Low-Friction Routing</td></tr>
             </table>
         </div>
     </div>
@@ -288,31 +289,31 @@
     <script>
         let scene, camera, renderer, controls;
         let fingers = {};
-        let palmMesh, palmGroup;
+        let palmGroup;
         let isWireframe = false;
         let isExploded = false;
-        let isBioLook = true;
+        let isBioLook = false;
 
-        const PALM_W = 72;
-        const PALM_L = 82;
-        const PALM_H = 20;
+        const PALM_W = 74;
+        const PALM_L = 84;
+        const PALM_H = 21;
 
         // Realistic materials
         const matChassis = new THREE.MeshStandardMaterial({
             color: 0x242e42,
-            roughness: 0.35,
-            metalness: 0.65
+            roughness: 0.38,
+            metalness: 0.6
         });
 
         const matBioBone = new THREE.MeshStandardMaterial({
-            color: 0x3b4758,
-            roughness: 0.45,
-            metalness: 0.4
+            color: 0x334155,
+            roughness: 0.42,
+            metalness: 0.45
         });
 
         const matPulp = new THREE.MeshStandardMaterial({
             color: 0x0284c7, // Tactile blue pad
-            roughness: 0.5,
+            roughness: 0.48,
             metalness: 0.15
         });
 
@@ -327,7 +328,7 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x070a11);
 
-            const grid = new THREE.GridHelper(300, 30, 0x1e293b, 0x0f172a);
+            const grid = new THREE.GridHelper(320, 32, 0x1e293b, 0x0f172a);
             grid.position.y = -35;
             scene.add(grid);
 
@@ -343,9 +344,9 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.target.set(0, 40, 0);
+            controls.target.set(0, 42, 0);
 
-            // Studio Lighting
+            // Lighting
             const ambient = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambient);
 
@@ -357,7 +358,7 @@
             fillLight.position.set(-160, 120, -80);
             scene.add(fillLight);
 
-            buildOrganicHand();
+            buildAnatomicalHand();
             updateHand();
 
             window.addEventListener('resize', onWindowResize);
@@ -367,16 +368,6 @@
         // Procedural Rounded Organic Phalanx
         function buildOrganicPhalanx(len, wProx, hProx, wDist, hDist, isFingertip = false) {
             const group = new THREE.Group();
-
-            // 1. Smooth tapered bone shaft using multiple blended rounded segments
-            const shaftCurve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(0, 0, 0),
-                new THREE.Vector3(0, len * 0.45, -0.6), // slight natural palm-in curve
-                new THREE.Vector3(0, len, 0)
-            ]);
-            
-            // Generate tapered tube / capsule body
-            const points = shaftCurve.getPoints(16);
             const bodyGroup = new THREE.Group();
 
             // Proximal Knuckle Bulb
@@ -406,7 +397,6 @@
             bodyGroup.add(distBulb);
 
             if (isFingertip) {
-                // Realistic Fingertip Pulp & Nail curve
                 const pulpGeom = new THREE.SphereGeometry(hDist * 0.48, 24, 24);
                 pulpGeom.scale(wDist * 0.46 / (hDist * 0.48), 1.25, 0.85);
                 pulpGeom.translate(0, len * 0.7, -hDist * 0.22);
@@ -448,68 +438,82 @@
             };
         }
 
-        function buildOrganicHand() {
+        function buildAnatomicalHand() {
             palmGroup = new THREE.Group();
 
-            // Smooth contoured palm body
-            const palmShape = new THREE.Group();
-            
-            // Natural rounded palm base
-            const palmBaseGeom = new THREE.BoxGeometry(PALM_W, PALM_L, PALM_H);
-            palmMesh = new THREE.Mesh(palmBaseGeom, matChassis);
-            palmMesh.position.y = PALM_L / 2;
-            palmShape.add(palmMesh);
+            // 1. Realistic Sculpted Human Palm
+            const palmSkin = new THREE.Group();
 
-            // Palm fleshy thenar muscle eminence (thumb mound)
-            const thenarGeom = new THREE.SphereGeometry(14, 24, 24);
-            thenarGeom.scale(1.2, 1.6, 0.9);
+            // Dorsal hand surface (smooth gentle contour)
+            const dorsalGeom = new THREE.BoxGeometry(PALM_W * 0.85, PALM_L * 0.88, PALM_H * 0.6);
+            dorsalGeom.translate(0, PALM_L * 0.48, PALM_H * 0.15);
+            const dorsalMesh = new THREE.Mesh(dorsalGeom, matChassis);
+            palmSkin.add(dorsalMesh);
+
+            // Thenar Eminence (prominent bulbous thumb base muscular mound)
+            const thenarGeom = new THREE.SphereGeometry(15, 24, 24);
+            thenarGeom.scale(1.15, 1.55, 0.85);
             const thenar = new THREE.Mesh(thenarGeom, matPulp);
-            thenar.position.set(-PALM_W * 0.32, PALM_L * 0.35, -2);
-            palmShape.add(thenar);
+            thenar.position.set(-PALM_W * 0.32, PALM_L * 0.36, -2.5);
+            thenar.rotation.set(0.2, 0.35, -0.4);
+            palmSkin.add(thenar);
 
-            // Hypothenar pad (pinky side)
-            const hypoGeom = new THREE.SphereGeometry(12, 20, 20);
-            hypoGeom.scale(0.9, 1.8, 0.8);
+            // Hypothenar Eminence (pinky side elongated muscular mound)
+            const hypoGeom = new THREE.SphereGeometry(13.5, 24, 24);
+            hypoGeom.scale(0.85, 1.85, 0.8);
             const hypo = new THREE.Mesh(hypoGeom, matPulp);
-            hypo.position.set(PALM_W * 0.35, PALM_L * 0.38, -2);
-            palmShape.add(hypo);
+            hypo.position.set(PALM_W * 0.35, PALM_L * 0.40, -3.0);
+            palmSkin.add(hypo);
 
-            // Knuckle mound pads (metacarpal heads)
-            const knuckleG = new THREE.CylinderGeometry(8, 8, PALM_W * 0.9, 24);
-            knuckleG.rotateZ(Math.PI / 2);
-            knuckleG.translate(0, PALM_L - 3, 0);
-            const knuckleMound = new THREE.Mesh(knuckleG, matChassis);
-            palmShape.add(knuckleMound);
+            // Distal Palmar Metacarpal Ridge (cushion mounds right below knuckles)
+            const ridgeGeom = new THREE.CylinderGeometry(7.5, 7.5, PALM_W * 0.78, 24);
+            ridgeGeom.rotateZ(Math.PI / 2);
+            ridgeGeom.translate(0, PALM_L - 14, -PALM_H * 0.2);
+            const ridge = new THREE.Mesh(ridgeGeom, matPulp);
+            palmSkin.add(ridge);
 
-            // Robotic Wrist Flange
-            const wristGeom = new THREE.CylinderGeometry(16, 16, 14, 32);
+            // Individual Metacarpal Knuckle Heads (transverse cascade arch)
+            const knuckleX = [-23, -8, 8, 23];
+            const knuckleY = [PALM_L - 2.5, PALM_L, PALM_L - 1.2, PALM_L - 3.8];
+            const knuckleZ = [0.4, 0.8, 0.3, -0.4];
+
+            for (let i = 0; i < 4; i++) {
+                const kGeom = new THREE.SphereGeometry(8, 20, 20);
+                kGeom.scale(1.0, 1.15, 0.9);
+                const kMesh = new THREE.Mesh(kGeom, matChassis);
+                kMesh.position.set(knuckleX[i], knuckleY[i] - 5, knuckleZ[i]);
+                palmSkin.add(kMesh);
+            }
+
+            // Wrist Base Transition & ISO Flange Mount
+            const wristGeom = new THREE.CylinderGeometry(15, 16, 14, 32);
             const wristMesh = new THREE.Mesh(wristGeom, matChassis);
-            wristMesh.position.y = -6;
-            palmShape.add(wristMesh);
+            wristMesh.position.set(0, 0, 0);
+            palmSkin.add(wristMesh);
 
-            palmGroup.add(palmShape);
+            palmGroup.add(palmSkin);
             scene.add(palmGroup);
 
-            // Finger positions & anatomical cascades
+            // 2. Cascade Placement for 4 Fingers matching the Metacarpal Arch
             const fingerConfigs = {
-                pinky:  { x: 23,  s: 0.78, rotZ: -0.10, archY: -2.0 },
-                ring:   { x: 8,   s: 0.92, rotZ: -0.04, archY:  0.0 },
-                middle: { x: -8,  s: 1.00, rotZ:  0.02, archY:  1.5 },
-                index:  { x: -23, s: 0.90, rotZ:  0.07, archY: -0.8 }
+                pinky:  { x: 23,  y: PALM_L - 3.8, z: -0.4, s: 0.78, rotZ: -0.10 },
+                ring:   { x: 8,   y: PALM_L - 1.2, z:  0.3, s: 0.92, rotZ: -0.04 },
+                middle: { x: -8,  y: PALM_L,       z:  0.8, s: 1.00, rotZ:  0.02 },
+                index:  { x: -23, y: PALM_L - 2.5, z:  0.4, s: 0.90, rotZ:  0.07 }
             };
 
             for (const [name, cfg] of Object.entries(fingerConfigs)) {
                 const s = cfg.s;
                 const f = buildOrganicFinger(38 * s, 26 * s, 22 * s, 14.5 * s, 12.5 * s);
-                f.root.position.set(cfg.x, PALM_L + cfg.archY, 0);
+                f.root.position.set(cfg.x, cfg.y - 2, cfg.z);
                 f.root.rotation.z = cfg.rotZ;
                 palmGroup.add(f.root);
                 fingers[name] = f;
             }
 
-            // Opposable Thumb (2 rounded segments with compound ball/socket joint angles)
+            // 3. Opposable Thumb positioned naturally on the Thenar Mound
             const thumbRoot = new THREE.Group();
-            thumbRoot.position.set(-PALM_W / 2 - 2, PALM_L * 0.35, -2);
+            thumbRoot.position.set(-PALM_W * 0.32 - 3, PALM_L * 0.36, -2.5);
             thumbRoot.rotation.set(0.35, 0.65, -0.72);
 
             const thP = buildOrganicPhalanx(32, 15.5, 13.5, 14, 12);
@@ -540,7 +544,6 @@
             document.getElementById('val-ring').innerText = Math.round(rngVal / rad) + '°';
             document.getElementById('val-pinky').innerText = Math.round(pnkVal / rad) + '°';
 
-            // Natural human kinematics coupling (MCP -> PIP -> DIP ratio)
             function flexFinger(f, angle) {
                 f.pJoint.rotation.x = angle * 0.75;
                 f.iJoint.rotation.x = angle * 0.95;
@@ -590,31 +593,31 @@
             document.getElementById('btn-explode').classList.toggle('active', isExploded);
             
             const offset = isExploded ? 20 : 0;
-            fingers.index.root.position.y = PALM_L - 0.8 + offset;
-            fingers.middle.root.position.y = PALM_L + 1.5 + offset * 1.35;
-            fingers.ring.root.position.y = PALM_L + offset;
-            fingers.pinky.root.position.y = PALM_L - 2.0 + offset * 0.75;
-            fingers.thumb.root.position.x = -PALM_W / 2 - 2 - offset;
+            fingers.index.root.position.y = (PALM_L - 2.5 - 2) + offset;
+            fingers.middle.root.position.y = (PALM_L - 2) + offset * 1.35;
+            fingers.ring.root.position.y = (PALM_L - 1.2 - 2) + offset;
+            fingers.pinky.root.position.y = (PALM_L - 3.8 - 2) + offset * 0.75;
+            fingers.thumb.root.position.x = (-PALM_W * 0.32 - 3) - offset;
         }
 
         function toggleTheme() {
             isBioLook = !isBioLook;
-            if (isBioLook) {
+            if (!isBioLook) {
                 matChassis.color.setHex(0x242e42);
-                matBioBone.color.setHex(0x3b4758);
+                matBioBone.color.setHex(0x334155);
                 matPulp.color.setHex(0x0284c7);
-                document.getElementById('btn-theme').innerText = "Bio-Cyber Look";
-            } else {
-                matChassis.color.setHex(0xd4a373); // Realistic human skin tone
-                matBioBone.color.setHex(0xe9c46a);
-                matPulp.color.setHex(0xe76f51);
                 document.getElementById('btn-theme').innerText = "Prosthetic Tone";
+            } else {
+                matChassis.color.setHex(0xdfa07a); // Warm prosthetic flesh
+                matBioBone.color.setHex(0xe8b595);
+                matPulp.color.setHex(0xe27d60); // Fleshy palm pad tone
+                document.getElementById('btn-theme').innerText = "Cyber Tone";
             }
         }
 
         function resetCamera() {
             camera.position.set(0, -180, 160);
-            controls.target.set(0, 40, 0);
+            controls.target.set(0, 42, 0);
         }
 
         function onWindowResize() {
