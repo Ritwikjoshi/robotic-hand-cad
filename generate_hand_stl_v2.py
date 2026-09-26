@@ -1,22 +1,26 @@
 """
 Procedural 3D Mesh Generator for 5-Finger Anthropomorphic Robotic Hand
 ========================================================================
-Iteration 2 (v2.2 - Seamless Organic Smooth-Lofted Geometry):
+Iteration 2 (v2.3 - Smooth Organic Finger Profiles & Concealed Screws):
 - User Feedback Integration:
-  1. Elimination of Sharp Valleys and Notches:
-     - Replaced intersecting primitive cylinders and spheres with smooth,
-       tangent-lofted organic convex hulls between anatomical joint hubs.
-     - Clevis cuts feature rounded root fillets, eliminating stress notches
-       and slicer deceleration artifacts on the Anycubic Kobra 2 Neo.
-  2. Maximum Structural Integrity & Smoothness:
-     - Continuous, gentle curvature from proximal knuckle to distal fingertip.
-     - Minimum solid wall thickness of 2.5 mm – 3.8 mm around all bores.
-  3. 100% Continuous Clean Cable Bores:
-     - Ø2.5 mm smooth through-bores aligned along the neutral flexor axis.
-  4. Calibrated Finger Width:
-     - 12.0 mm (distal/intermediate) to 13.5 mm (proximal).
-  5. Hinge Pin Holes:
-     - Ø3.4 mm pin bores (radius 1.70 mm) for frictionless rotation with 3.0 mm pins / M3 bolts.
+  1. Palm Knuckle Attachment & Notch Elimination:
+     - Replaced narrow, jagged 5.2 mm box cuts in the palm with smooth, robust
+       male knuckle tongues (4.4 mm width) and concentric 7.2 mm radius rotational
+       pockets, completely eliminating uneven notches and blocking edges.
+     - Fingers articulate smoothly with full rotational range.
+  2. Concealed M3 Screws & Nuts:
+     - Integrated counterbores (Ø6.5 mm, 2.6 mm deep) for standard M3 socket/button
+       head screws so screw heads are 100% recessed flush inside the outer walls.
+     - Integrated matching pockets (Ø6.5 mm, 2.4 mm deep) on the opposing side
+       to conceal standard M3 nuts flush with the bone contour.
+     - Both proximal and intermediate phalanges, as well as the thumb CMC joint,
+       feature dedicated concealed hardware seats.
+  3. Natural Rounded Anatomical Contours:
+     - Continuous 360° elliptical cross-sections for proximal and intermediate segments.
+     - No flat cuboidal faces or sharp stress notches.
+  4. Cable Through-Bores & Pin Tolerances:
+     - Continuous Ø2.5 mm tendon passages.
+     - Ø3.4 mm pin bores for smooth rotation on M3 bolts.
 """
 
 import os
@@ -44,10 +48,16 @@ TENDON_RADIUS = 1.25     # 2.5 mm diameter continuous internal cable bore
 CLEVIS_SLOT_W = 5.2      # Female clevis pocket width
 CLEVIS_TONGUE_W = 4.4    # Male clevis tongue width (0.4 mm clearance each side)
 
+# Concealed M3 screw head and nut counterbore dimensions
+SCREW_HEAD_R = 3.25      # 6.5 mm diameter counterbore for M3 screw head
+SCREW_HEAD_DEPTH = 2.6   # 2.6 mm deep (fully conceals M3 socket / button head)
+NUT_R = 3.25             # 6.5 mm diameter counterbore for M3 nut
+NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
+
 
 def generate_distal_phalanx(length=25.0, width=12.0, height=11.0):
     """
-    Fingertip phalanx with seamless organic contour (zero sharp valleys):
+    Fingertip phalanx with seamless organic contour:
     - Smooth tangent loft from base hinge hub into rounded fingertip pulp
     - Continuous Ø2.5 mm tendon bore
     - Compact dorsal knot anchor chamber
@@ -89,6 +99,7 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     - Anatomical spherical condyle knuckles at proximal and distal joints
     - Cylindrical hinge hubs with rounded transitions
     - Filleted clevis root pockets (no sharp notch corners)
+    - Concealed M3 screw head counterbore on left, nut pocket on right
     - Continuous Ø2.5 mm tendon bore
     """
     r_x = width * 0.48
@@ -136,15 +147,36 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     c_box_dist.apply_translation([0, length + 2.0, 0])
     cutters.append(trimesh.boolean.union([c_bottom_dist, c_box_dist]))
 
-    # Hinge pin bores
+    # Proximal hinge pin & concealed screw/nut seats
     pin_prox = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     cutters.append(pin_prox)
 
+    cb_p_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=32)
+    cb_p_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_p_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_p_head)
+
+    cb_p_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=32)
+    cb_p_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_p_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_p_nut)
+
+    # Distal hinge pin & concealed screw/nut seats
     pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
     cutters.append(pin_dist)
+
+    cb_d_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=32)
+    cb_d_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_d_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, length, 0])
+    cutters.append(cb_d_head)
+
+    cb_d_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=32)
+    cb_d_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_d_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, length, 0])
+    cutters.append(cb_d_nut)
 
     # Continuous internal tendon bore
     t_flex = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
@@ -162,7 +194,8 @@ def generate_proximal_phalanx(length=38.0, width=13.5, height=12.5):
     - Anatomical spherical condyle knuckles at base and distal ends
     - Cylindrical hinge hubs with rounded transitions
     - Rounded clevis root, no sharp re-entrant corners
-    - Smooth chamfered male clevis tongue
+    - Concealed M3 screw head counterbore on left, nut pocket on right
+    - Smooth chamfered male clevis tongue at distal end
     - Continuous Ø2.5 mm tendon bore
     """
     r_x = width * 0.48
@@ -214,6 +247,18 @@ def generate_proximal_phalanx(length=38.0, width=13.5, height=12.5):
     pin_base.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     cutters.append(pin_base)
 
+    # Base concealed screw head & nut counterbores
+    cb_b_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=32)
+    cb_b_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_b_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_b_head)
+
+    cb_b_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=32)
+    cb_b_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_b_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_b_nut)
+
+    # Distal hinge pin
     pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
@@ -275,7 +320,13 @@ def generate_forearm_adapter(adapter_length=65.0, outer_radius=23.0):
 
 
 def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
-    """Anatomical palm with smooth organic contours and continuous cable routing."""
+    """
+    Anatomical palm with smooth organic contours, clean knuckle tongues, and concealed screw hardware:
+    - Replaced narrow, uneven box slots with smooth 4.4 mm male knuckle tongues.
+    - Concentric 7.2 mm rotational clearance pockets for fingers (zero blocking notches, silky rotation).
+    - Concealed screw head and nut counterbores for thumb CMC joint.
+    - Continuous cable tunnels leading smoothly to internal tendon routing chamber.
+    """
     wrist_base = icosphere(subdivisions=3, radius=1.0)
     wrist_base.apply_scale([palm_w * 0.38, 14.0, palm_h * 0.44])
     wrist_base.apply_translation([0, 10.0, 0])
@@ -294,12 +345,14 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
     knuckle_y = [palm_l - 2.5, palm_l, palm_l - 1.2, palm_l - 3.8]
     knuckle_z = [0.4, 0.8, 0.3, -0.4]
 
-    knuckle_spheres = []
+    # Knuckle male tongues along X:
+    knuckle_tongues = []
     for fx, fy, fz in zip(finger_x, knuckle_y, knuckle_z):
-        ks = icosphere(subdivisions=3, radius=1.0)
-        ks.apply_scale([9.2, 12.5, palm_h * 0.48])
-        ks.apply_translation([fx, fy - 6.0, fz])
-        knuckle_spheres.append(ks)
+        py = fy - 4.0
+        kt = cylinder(radius=6.0, height=CLEVIS_TONGUE_W, sections=40)
+        kt.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+        kt.apply_translation([fx, py, fz])
+        knuckle_tongues.append(kt)
 
     distal_ridge = cylinder(radius=palm_h * 0.36, height=palm_w * 0.78, sections=32)
     distal_ridge.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
@@ -309,28 +362,45 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
     dorsal_core.apply_scale([palm_w * 0.44, palm_l * 0.42, palm_h * 0.36])
     dorsal_core.apply_translation([0, palm_l * 0.48, palm_h * 0.12])
 
-    all_palm_parts = [wrist_base, thenar, hypo, distal_ridge, dorsal_core] + knuckle_spheres
+    all_palm_parts = [wrist_base, thenar, hypo, distal_ridge, dorsal_core] + knuckle_tongues
     palm_hull = trimesh.boolean.union(all_palm_parts).convex_hull
 
     cutters = []
 
-    # 4 Knuckle clevis slots with rounded root fillets
+    # Smooth knuckle clearance reliefs & pin holes:
     for fx, fy, fz in zip(finger_x, knuckle_y, knuckle_z):
-        c_slot = box(extents=[CLEVIS_SLOT_W, 15.0, palm_h * 0.85])
-        c_slot.apply_translation([fx, fy - 1.0, fz])
-        cutters.append(c_slot)
+        py = fy - 4.0
+        r_rot = 7.2  # Generous rotational clearance around 6.0 mm finger knuckle
+        
+        # Left clearance pocket (clears left finger prong without sharp notches)
+        left_c = cylinder(radius=r_rot, height=6.0, sections=36)
+        left_c.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+        left_c.apply_translation([fx - (CLEVIS_TONGUE_W/2 + 3.0), py, fz])
+        left_box = box(extents=[6.0, 18.0, r_rot * 2])
+        left_box.apply_translation([fx - (CLEVIS_TONGUE_W/2 + 3.0), py + 6.0, fz])
+        
+        # Right clearance pocket (clears right finger prong without sharp notches)
+        right_c = cylinder(radius=r_rot, height=6.0, sections=36)
+        right_c.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+        right_c.apply_translation([fx + (CLEVIS_TONGUE_W/2 + 3.0), py, fz])
+        right_box = box(extents=[6.0, 18.0, r_rot * 2])
+        right_box.apply_translation([fx + (CLEVIS_TONGUE_W/2 + 3.0), py + 6.0, fz])
 
-        p_hole = cylinder(radius=PIN_RADIUS, height=22.0, sections=32)
+        cutters.extend([left_c, left_box, right_c, right_box])
+
+        # Pin hole through knuckle tongue
+        p_hole = cylinder(radius=PIN_RADIUS, height=CLEVIS_TONGUE_W + 4.0, sections=32)
         p_hole.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-        p_hole.apply_translation([fx, fy - 4.0, fz])
+        p_hole.apply_translation([fx, py, fz])
         cutters.append(p_hole)
 
+        # Tendon tunnel leading into palm cavity
         t_tun = cylinder(radius=1.35, height=36.0, sections=20)
         t_tun.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
-        t_tun.apply_translation([fx, fy - 14.0, fz - 3.5])
+        t_tun.apply_translation([fx, py - 10.0, fz - 3.5])
         cutters.append(t_tun)
 
-    # Corrected Thumb CMC Joint Socket
+    # Thumb CMC Joint with concealed screw counterbores
     th_pos = [-palm_w * 0.36 - 2.5, palm_l * 0.28, -2.0]
     rot_thumb_cmc = trimesh.transformations.euler_matrix(THUMB_CMC_X, THUMB_CMC_Y, THUMB_CMC_Z)
 
@@ -339,11 +409,24 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
     th_slot.apply_translation(th_pos)
     cutters.append(th_slot)
 
-    th_pin = cylinder(radius=PIN_RADIUS, height=26.0, sections=32)
+    th_pin = cylinder(radius=PIN_RADIUS, height=28.0, sections=32)
     th_pin.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     th_pin.apply_transform(rot_thumb_cmc)
     th_pin.apply_translation(th_pos)
     cutters.append(th_pin)
+
+    # Thumb screw counterbore on outer palm cheek
+    th_cb_head = cylinder(radius=SCREW_HEAD_R, height=4.0, sections=32)
+    th_cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    th_cb_head.apply_transform(rot_thumb_cmc)
+    th_cb_head.apply_translation(th_pos + rot_thumb_cmc[:3, 0] * (-11.0))
+    cutters.append(th_cb_head)
+
+    th_cb_nut = cylinder(radius=NUT_R, height=4.0, sections=32)
+    th_cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    th_cb_nut.apply_transform(rot_thumb_cmc)
+    th_cb_nut.apply_translation(th_pos + rot_thumb_cmc[:3, 0] * (11.0))
+    cutters.append(th_cb_nut)
 
     th_tendon = cylinder(radius=1.35, height=34.0, sections=20)
     th_tendon.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
@@ -383,21 +466,21 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
 
 def build_iteration_2():
     print("=" * 70)
-    print("BUILDING ITERATION 2 (v2.2) - SMOOTH-LOFTED SEAMLESS ORGANIC GEOMETRY")
-    print("  Curvature status    : ZERO SHARP VALLEYS OR NOTCHES (Lofted Hulls)")
-    print("  Clevis root status  : FILLETED FULL-RADIUS CORNERS")
-    print("  Finger width target : 12.0 mm (distal/intermediate), 13.5 mm (proximal)")
-    print("  Tendon bore status  : 100% CONTINUOUS PASS-THROUGH (Dia = 2.5 mm)")
-    print("  Wall thickness      : 2.5 - 3.8 mm solid polymer on all sides")
-    print("  Pin hole diameter   : 3.4 mm (smooth clearance for 3.0 mm pins)")
+    print("BUILDING ITERATION 2 (v2.3) - CONCEALED SCREWS & SMOOTH PALM KNUCKLES")
+    print("  Palm Knuckle Status : SMOOTH MALE TONGUES & 7.2mm CONCENTRIC CLEARANCE")
+    print("  Hardware Seats      : CONCEALED M3 SCREW HEAD COUNTERBORES (Ø6.5mm, 2.6mm deep)")
+    print("  Nut Pockets         : CONCEALED M3 HEX/ROUND NUT COUNTERBORES (Ø6.5mm, 2.4mm deep)")
+    print("  Finger Profiles     : 360-DEGREE ELLIPTICAL CROSS-SECTIONS (No cuboidal faces)")
+    print("  Tendon Bores        : 100% CONTINUOUS PASS-THROUGH (Dia = 2.5 mm)")
+    print("  Pin Hole Diameter   : 3.4 mm (smooth clearance for standard M3 bolts)")
     print("  Output Directory    : " + STL_DIR_V2)
     print("=" * 70)
 
-    print("\n[1/5] Generating Smooth Organic Palm (v2)...")
+    print("\n[1/5] Generating Smooth Organic Palm (v2)..." )
     palm = generate_palm()
     palm.export(os.path.join(STL_DIR_V2, "palm_v2.stl"))
 
-    print("[2/5] Generating Forearm Servo Adapter (v2)...")
+    print("[2/5] Generating Forearm Servo Adapter (v2)..." )
     adapter = generate_forearm_adapter()
     adapter.export(os.path.join(STL_DIR_V2, "forearm_servo_adapter_v2.stl"))
 
@@ -410,7 +493,7 @@ def build_iteration_2():
         {"name": "pinky",  "w_prox": 12.5, "w_mid": 11.2, "w_dist": 11.0, "len_p": 31.0, "len_i": 22.5, "len_d": 20.0, "x":  23.0, "y": PALM_L - 3.8, "z": -0.4, "rotZ": -0.10, "fm": 0.34, "fp": 0.44, "fd": 0.28}
     ]
 
-    print("[3/5] Generating & Exporting All 4 Smooth-Lofted Finger Digits (v2)...")
+    print("[3/5] Generating & Exporting All 4 Finger Digits with Concealed Screws (v2)..." )
     for d in digit_configs:
         dname = d["name"]
         p = generate_proximal_phalanx(length=d["len_p"], width=d["w_prox"], height=12.5)
@@ -438,7 +521,7 @@ def build_iteration_2():
         f_full.apply_translation([d["x"], d["y"] - 4.0, d["z"]])
         components.append(f_full)
 
-    print("[4/5] Generating & Exporting Smooth Opposable Thumb (v2)...")
+    print("[4/5] Generating & Exporting Opposable Thumb with Concealed Screws (v2)..." )
     th_p = generate_proximal_phalanx(length=33.0, width=14.5, height=13.0)
     th_d = generate_distal_phalanx(length=27.0, width=13.5, height=12.0)
 
@@ -462,11 +545,11 @@ def build_iteration_2():
     adapter_c.apply_translation([0, -2.0, 0])
     components.append(adapter_c)
 
-    print("[5/5] Merging Full Assembly (v2)...")
+    print("[5/5] Merging Full Assembly (v2)..." )
     full_assembly = trimesh.util.concatenate(components)
     full_assembly.export(os.path.join(STL_DIR_V2, "robotic_hand_full_assembly_v2.stl"))
 
-    print("\nSUCCESS: All Smooth-Lofted Iteration 2 (v2) STLs exported to:", STL_DIR_V2)
+    print("\nSUCCESS: All Iteration 2 (v2.3) STLs exported to:", STL_DIR_V2)
 
 
 if __name__ == "__main__":
