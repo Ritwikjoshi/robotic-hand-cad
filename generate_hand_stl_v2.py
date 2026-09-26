@@ -1,15 +1,21 @@
 """
 Procedural 3D Mesh Generator for 5-Finger Anthropomorphic Robotic Hand
 ========================================================================
-Iteration 2 (v2 - Calibrated Physical Printing Scale):
+Iteration 2 (v2 - Continuous Pass-Through Tendon Bores & Calibrated Scale):
 - User Feedback Integration:
-  1. Width of finger calibrated: Target width = 12.0 mm (distal/intermediate) to 13.5 mm (proximal).
-  2. Pin hole enlarged from radius 1.65 mm (3.3 mm hole) to radius 1.75 mm (3.5 mm hole)
-     so a standard 3.0 mm dowel pin / M3 screw fits smoothly with zero binding after FDM shrinkage.
-  3. Tendon bore enlarged from radius 0.75-0.9 mm (1.5-1.8 mm dia) to radius 1.25 mm (2.5 mm dia)
-     and 1.5 mm (3.0 mm dia) for easy threading of Dyneema cables without snagging.
-  4. Hinge clevis gaps increased from 4.8 mm to 5.4 mm with 4.5 mm tongue for silky smooth rotation.
-  5. Kept previous STL files intact in `stl_exports/` and saved all updated files to `stl_exports_v2/`.
+  1. Full Pass-Through Bores:
+     Tendon holes now cut 100% continuously through every phalanx from end to end
+     without blind internal walls or dead-ends.
+  2. Calibrated Finger Width:
+     12.0 mm (distal & intermediate) to 13.5 mm (proximal) for realistic human scale.
+  3. Enlarged Tendon Bore:
+     Ø2.8 mm continuous cylinder with conical/chamfered lead-in funnels (Ø3.6 mm)
+     at joint boundaries for effortless Dyneema threading.
+  4. Hinge Pin Clearance:
+     Ø3.5 mm pin holes specifically compensating for FDM shrinkage around 3.0 mm dowel pins/M3 screws.
+  5. Clevis Air Gaps:
+     5.4 mm slot vs 4.4 mm tongue (0.5 mm lateral air gap on each side).
+  6. Preserves previous STLs in `stl_exports/`, writes updated files to `stl_exports_v2/`.
 """
 
 import os
@@ -33,20 +39,20 @@ PALM_H = 22.0
 
 # Calibrated hole and clevis tolerances for FDM printing (Kobra 2 Neo)
 PIN_RADIUS = 1.75        # 3.5 mm diameter hole (clears 3.0 mm pin / M3 bolt)
-TENDON_RADIUS = 1.25     # 2.5 mm diameter internal cable bore (effortless threading)
-CABLE_PORT_RADIUS = 1.50 # 3.0 mm entrance/exit funnel ports
+TENDON_RADIUS = 1.40     # 2.8 mm diameter internal cable bore (effortless threading)
+FUNNEL_RADIUS = 1.80     # 3.6 mm diameter lead-in entrance/exit funnel
 CLEVIS_SLOT_W = 5.4      # Female clevis pocket width
 CLEVIS_TONGUE_W = 4.4    # Male clevis tongue width (0.5 mm clearance each side)
 
 
 def generate_distal_phalanx(length=25.0, width=12.0, height=10.5):
     """
-    Fingertip phalanx:
+    Fingertip phalanx with 100% continuous through-bore and accessible knot pocket:
     - Width calibrated to 12.0 mm
-    - Enlarged tendon bore (dia 2.5 mm) & anchor pocket
-    - Enlarged pin hole (dia 3.5 mm)
+    - Continuous pass-through bore from base to fingertip apex
+    - Accessible knot anchor chamber for cable termination
+    - Pin hole dia = 3.5 mm
     """
-    # Male hinge base cylinder that fits into intermediate female clevis
     k_base = cylinder(radius=height * 0.48, height=CLEVIS_TONGUE_W, sections=32)
     k_base.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
@@ -64,32 +70,34 @@ def generate_distal_phalanx(length=25.0, width=12.0, height=10.5):
 
     body = trimesh.boolean.union([k_base, shaft, pulp, apex])
 
-    # Cutters
-    pin_cutter = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
+    # 1. Pin hole (3.5 mm dia)
+    pin_cutter = cylinder(radius=PIN_RADIUS, height=width + 8.0, sections=32)
     pin_cutter.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
-    # Generous tendon slot & anchor knot pocket
-    tendon_slot = box(extents=[width * 0.45, 5.0, height * 0.65])
-    tendon_slot.apply_translation([0, length * 0.55, -height * 0.15])
-
-    anchor_pocket = box(extents=[6.0, 5.5, 7.0])
-    anchor_pocket.apply_translation([0, length * 0.75, -height * 0.08])
-
-    tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 6.0, sections=20)
+    # 2. Fully continuous tendon through-bore extending past both ends
+    tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 30.0, sections=24)
     tendon_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     tendon_bore.apply_translation([0, length / 2, -height * 0.22])
 
-    cutters = trimesh.boolean.union([pin_cutter, tendon_slot, anchor_pocket, tendon_bore])
+    # 3. Lead-in funnel at proximal joint entrance
+    funnel_prox = cylinder(radius=FUNNEL_RADIUS, height=10.0, sections=20)
+    funnel_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    funnel_prox.apply_translation([0, 0, -height * 0.22])
+
+    # 4. Open-top anchor cavity for knot / crimp bead termination
+    anchor_pocket = box(extents=[5.6, 6.5, height * 0.85])
+    anchor_pocket.apply_translation([0, length * 0.65, -height * 0.18])
+
+    cutters = trimesh.boolean.union([pin_cutter, tendon_bore, funnel_prox, anchor_pocket])
     return body.difference(cutters)
 
 
 def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.0):
     """
-    Intermediate phalanx:
+    Intermediate phalanx with 100% continuous flexor & extensor pass-through tunnels:
     - Width calibrated to 12.5 mm
-    - Proximal female clevis (slot 5.4 mm)
-    - Distal female clevis (slot 5.4 mm)
-    - Enlarged flexor & extensor tendon bores (dia 2.5 mm)
+    - Proximal & distal female clevis slots (5.4 mm)
+    - Through-bores open at both ends into clevis pockets with lead-in funnels
     """
     k_prox = cylinder(radius=height * 0.48, height=width, sections=32)
     k_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
@@ -108,53 +116,51 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.0):
 
     body = trimesh.boolean.union([k_prox, shaft, cushion, k_dist])
 
-    # Proximal clevis slot (receives proximal tongue)
+    # Clevis cuts
     clevis_cut = box(extents=[CLEVIS_SLOT_W, height * 1.5, height * 1.5])
-
-    # Distal clevis cut (receives distal phalanx tongue)
     dist_clevis_cut = box(extents=[CLEVIS_SLOT_W, height * 1.5, height * 1.5])
     dist_clevis_cut.apply_translation([0, length, 0])
 
-    # Hinge Pin Bores
-    pin_prox = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
+    # Pin holes
+    pin_prox = cylinder(radius=PIN_RADIUS, height=width + 8.0, sections=32)
     pin_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
-    pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
+    pin_dist = cylinder(radius=PIN_RADIUS, height=width + 8.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
 
-    # Enlarged Tendon Bores
-    t_flex = cylinder(radius=TENDON_RADIUS, height=length + 6.0, sections=20)
+    # Continuous Through-Bores (length + 30 mm ensures zero blind walls)
+    t_flex = cylinder(radius=TENDON_RADIUS, height=length + 30.0, sections=24)
     t_flex.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_flex.apply_translation([0, length / 2, -height * 0.28])
 
-    t_ext = cylinder(radius=TENDON_RADIUS, height=length + 6.0, sections=20)
+    t_ext = cylinder(radius=TENDON_RADIUS, height=length + 30.0, sections=24)
     t_ext.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_ext.apply_translation([0, length / 2, height * 0.28])
 
-    # Chamfered cable guide eyelets at ends
-    guide_prox = cylinder(radius=CABLE_PORT_RADIUS, height=width * 0.65, sections=18)
-    guide_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    guide_prox.apply_translation([0, 2.5, -height * 0.28])
+    # Funnels at both ends
+    f_prox = cylinder(radius=FUNNEL_RADIUS, height=10.0, sections=20)
+    f_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    f_prox.apply_translation([0, 0, -height * 0.28])
 
-    guide_dist = cylinder(radius=CABLE_PORT_RADIUS, height=width * 0.65, sections=18)
-    guide_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    guide_dist.apply_translation([0, length - 2.5, -height * 0.28])
+    f_dist = cylinder(radius=FUNNEL_RADIUS, height=10.0, sections=20)
+    f_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    f_dist.apply_translation([0, length, -height * 0.28])
 
     cutters = trimesh.boolean.union([
         clevis_cut, dist_clevis_cut, pin_prox, pin_dist,
-        t_flex, t_ext, guide_prox, guide_dist
+        t_flex, t_ext, f_prox, f_dist
     ])
     return body.difference(cutters)
 
 
 def generate_proximal_phalanx(length=38.0, width=13.5, height=12.0):
     """
-    Proximal phalanx:
-    - Width calibrated to 13.5 mm (smooth anatomical taper to 12.5 mm intermediate)
-    - Proximal female clevis to knuckle (slot 5.4 mm)
-    - Distal male tongue (width 4.4 mm)
-    - Enlarged tendon bores (dia 2.5 mm) & cable eyelets
+    Proximal phalanx with 100% continuous flexor & extensor pass-through tunnels:
+    - Width calibrated to 13.5 mm
+    - Proximal female clevis slot (5.4 mm)
+    - Distal male tongue (4.4 mm)
+    - Continuous through-bore completely passes through base and tongue
     """
     k_base = cylinder(radius=height * 0.48, height=width, sections=32)
     k_base.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
@@ -173,31 +179,39 @@ def generate_proximal_phalanx(length=38.0, width=13.5, height=12.0):
 
     body = trimesh.boolean.union([k_base, shaft, cushion, tongue])
 
-    # Proximal base clevis slot (mounts to palm knuckle)
-    base_clevis = box(extents=[CLEVIS_SLOT_W, height * 1.5, height * 1.5])
+    # Base clevis slot
+    base_clevis = box(extents=[CLEVIS_SLOT_W, height * 1.6, height * 1.6])
 
-    # Hinge Pin Bores
-    pin_base = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
+    # Pin holes
+    pin_base = cylinder(radius=PIN_RADIUS, height=width + 8.0, sections=32)
     pin_base.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
-    pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
+    pin_dist = cylinder(radius=PIN_RADIUS, height=width + 8.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
 
-    # Enlarged Tendon Bores
-    t_flex = cylinder(radius=TENDON_RADIUS, height=length + 6.0, sections=20)
+    # Continuous Through-Bores (length + 30 mm ensures continuous open tunnel)
+    t_flex = cylinder(radius=TENDON_RADIUS, height=length + 30.0, sections=24)
     t_flex.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_flex.apply_translation([0, length / 2, -height * 0.28])
 
-    t_ext = cylinder(radius=TENDON_RADIUS, height=length + 6.0, sections=20)
+    t_ext = cylinder(radius=TENDON_RADIUS, height=length + 30.0, sections=24)
     t_ext.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_ext.apply_translation([0, length / 2, height * 0.28])
 
-    cable_eyelet = cylinder(radius=CABLE_PORT_RADIUS, height=width * 0.65, sections=18)
-    cable_eyelet.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    cable_eyelet.apply_translation([0, 3.5, -height * 0.28])
+    # Funnel ports at both ends
+    funnel_prox = cylinder(radius=FUNNEL_RADIUS, height=12.0, sections=20)
+    funnel_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    funnel_prox.apply_translation([0, 0, -height * 0.28])
 
-    cutters = trimesh.boolean.union([base_clevis, pin_base, pin_dist, t_flex, t_ext, cable_eyelet])
+    funnel_dist = cylinder(radius=FUNNEL_RADIUS, height=12.0, sections=20)
+    funnel_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    funnel_dist.apply_translation([0, length, -height * 0.28])
+
+    cutters = trimesh.boolean.union([
+        base_clevis, pin_base, pin_dist,
+        t_flex, t_ext, funnel_prox, funnel_dist
+    ])
     return body.difference(cutters)
 
 
@@ -228,7 +242,7 @@ def generate_forearm_adapter(adapter_length=65.0, outer_radius=23.0):
         pocket.apply_translation([sx, sy, 0])
         cutters.append(pocket)
 
-        t_ch = cylinder(radius=1.8, height=adapter_length + 10.0, sections=16)
+        t_ch = cylinder(radius=2.0, height=adapter_length + 15.0, sections=18)
         t_ch.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
         t_ch.apply_translation([sx, -adapter_length / 2, -10.0])
         cutters.append(t_ch)
@@ -249,7 +263,7 @@ def generate_forearm_adapter(adapter_length=65.0, outer_radius=23.0):
 
 
 def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
-    """Anatomical palm with calibrated clevises, enlarged cable tunnels, and thumb socket."""
+    """Anatomical palm with calibrated clevises, continuous cable tunnels, and thumb socket."""
     wrist_base = icosphere(subdivisions=3, radius=1.0)
     wrist_base.apply_scale([palm_w * 0.38, 14.0, palm_h * 0.44])
     wrist_base.apply_translation([0, 10.0, 0])
@@ -290,24 +304,22 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
 
     # 4 Knuckle clevis slots & pin holes
     for fx, fy, fz in zip(finger_x, knuckle_y, knuckle_z):
-        # Male tongue on proximal phalanx is 4.4 mm wide -> slot is 5.4 mm
         c_slot = box(extents=[CLEVIS_SLOT_W, 17.0, palm_h + 6.0])
         c_slot.apply_translation([fx, fy - 1.0, fz])
         cutters.append(c_slot)
 
-        # Pin hole 3.5 mm dia
-        p_hole = cylinder(radius=PIN_RADIUS, height=20.0, sections=32)
+        p_hole = cylinder(radius=PIN_RADIUS, height=22.0, sections=32)
         p_hole.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
         p_hole.apply_translation([fx, fy - 4.0, fz])
         cutters.append(p_hole)
 
-        # Enlarged tendon conduit (dia 3.0 mm)
-        t_tun = cylinder(radius=1.5, height=36.0, sections=20)
+        # Continuous tendon conduit into palm cavity
+        t_tun = cylinder(radius=1.6, height=38.0, sections=20)
         t_tun.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
         t_tun.apply_translation([fx, fy - 14.0, fz - 3.5])
         cutters.append(t_tun)
 
-        eyelet = cylinder(radius=1.5, height=9.0, sections=20)
+        eyelet = cylinder(radius=1.6, height=10.0, sections=20)
         eyelet.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
         eyelet.apply_translation([fx, fy - 8.0, fz - 3.0])
         cutters.append(eyelet)
@@ -321,19 +333,19 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
     th_slot.apply_translation(th_pos)
     cutters.append(th_slot)
 
-    th_pin = cylinder(radius=PIN_RADIUS, height=26.0, sections=32)
+    th_pin = cylinder(radius=PIN_RADIUS, height=28.0, sections=32)
     th_pin.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     th_pin.apply_transform(rot_thumb_cmc)
     th_pin.apply_translation(th_pos)
     cutters.append(th_pin)
 
-    th_tendon = cylinder(radius=1.5, height=34.0, sections=20)
+    th_tendon = cylinder(radius=1.6, height=36.0, sections=20)
     th_tendon.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     th_tendon.apply_transform(rot_thumb_cmc)
     th_tendon.apply_translation([th_pos[0] + 5, th_pos[1] - 8, th_pos[2]])
     cutters.append(th_tendon)
 
-    th_opp_bore = cylinder(radius=1.5, height=30.0, sections=20)
+    th_opp_bore = cylinder(radius=1.6, height=32.0, sections=20)
     th_opp_bore.apply_transform(trimesh.transformations.rotation_matrix(0.4, [0, 0, 1]))
     th_opp_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     th_opp_bore.apply_translation([th_pos[0] + 8, th_pos[1] - 12, th_pos[2] + 2])
@@ -365,10 +377,10 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
 
 def build_iteration_2():
     print("=" * 65)
-    print("BUILDING ITERATION 2 (v2) - CALIBRATED PRINTING SCALE")
+    print("BUILDING ITERATION 2 (v2) - CONTINUOUS THROUGH-BORES & CALIBRATED")
     print("  Finger width target : 12.0 mm (distal/intermediate), 13.5 mm (proximal)")
+    print("  Tendon bore status  : 100% CONTINUOUS PASS-THROUGH (Dia = 2.8 mm)")
     print("  Pin hole diameter   : 3.5 mm (smooth clearance for 3.0 mm pins)")
-    print("  Tendon bore diameter: 2.5 - 3.0 mm (wide, frictionless cable threading)")
     print("  Output Directory    : " + STL_DIR_V2)
     print("=" * 65)
 
@@ -382,9 +394,6 @@ def build_iteration_2():
 
     components = [palm]
 
-    # Digit configurations
-    # Index finger calibrated specifically to 12.0 mm width
-    # Scales relative to index baseline
     digit_configs = [
         {"name": "index",  "w_prox": 13.5, "w_mid": 12.0, "w_dist": 12.0, "len_p": 36.0, "len_i": 26.0, "len_d": 24.0, "x": -23.0, "y": PALM_L - 2.5, "z": 0.4, "rotZ": 0.07, "fm": 0.32, "fp": 0.42, "fd": 0.25},
         {"name": "middle", "w_prox": 14.5, "w_mid": 13.0, "w_dist": 12.8, "len_p": 40.0, "len_i": 29.0, "len_d": 25.5, "x":  -8.0, "y": PALM_L,       "z": 0.8, "rotZ": 0.02, "fm": 0.28, "fp": 0.38, "fd": 0.22},
@@ -392,7 +401,7 @@ def build_iteration_2():
         {"name": "pinky",  "w_prox": 12.5, "w_mid": 11.2, "w_dist": 11.0, "len_p": 31.0, "len_i": 22.5, "len_d": 20.0, "x":  23.0, "y": PALM_L - 3.8, "z": -0.4, "rotZ": -0.10, "fm": 0.34, "fp": 0.44, "fd": 0.28}
     ]
 
-    print("[3/5] Generating & Exporting All 4 Finger Digits (v2)...")
+    print("[3/5] Generating & Exporting All 4 Finger Digits with Continuous Bores (v2)...")
     for d in digit_configs:
         dname = d["name"]
         p = generate_proximal_phalanx(length=d["len_p"], width=d["w_prox"], height=12.0)
@@ -422,7 +431,7 @@ def build_iteration_2():
         f_full.apply_translation([d["x"], d["y"] - 4.0, d["z"]])
         components.append(f_full)
 
-    print("[4/5] Generating & Exporting Opposable Thumb (v2)...")
+    print("[4/5] Generating & Exporting Opposable Thumb with Continuous Bores (v2)...")
     th_p = generate_proximal_phalanx(length=33.0, width=14.5, height=13.0)
     th_d = generate_distal_phalanx(length=27.0, width=13.5, height=12.0)
 
@@ -450,7 +459,7 @@ def build_iteration_2():
     full_assembly = trimesh.util.concatenate(components)
     full_assembly.export(os.path.join(STL_DIR_V2, "robotic_hand_full_assembly_v2.stl"))
 
-    print("\nSUCCESS: All Iteration 2 (v2) STLs exported to:", STL_DIR_V2)
+    print("\nSUCCESS: All Iteration 2 (v2) STLs with continuous pass-through bores exported to:", STL_DIR_V2)
 
 
 if __name__ == "__main__":
