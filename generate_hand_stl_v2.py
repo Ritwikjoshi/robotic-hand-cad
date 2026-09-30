@@ -64,37 +64,60 @@ NUT_R = 3.25             # 6.5 mm diameter counterbore for M3 nut
 NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
 
 
-def generate_distal_phalanx(length=25.0, width=12.0, height=11.0):
+def make_base_condyles(width, height):
     """
-    Fingertip phalanx with seamless organic contour:
-    - Full-width base hub provides wall material for the female clevis socket
+    Constructs smooth anatomical base condyles with spherical endcaps
+    to eliminate sharp flat-cylinder edges while maintaining full solid wall
+    thickness for concealed screw head and nut counterbores.
+    """
+    r_z = height * 0.46
+    cyl = cylinder(radius=r_z, height=max(width - 2.0, 2.0), sections=36)
+    cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+
+    cap_l = icosphere(subdivisions=3, radius=1.0)
+    cap_l.apply_scale([1.0, r_z, r_z])
+    cap_l.apply_translation([-(width/2 - 1.0), 0, 0])
+
+    cap_r = icosphere(subdivisions=3, radius=1.0)
+    cap_r.apply_scale([1.0, r_z, r_z])
+    cap_r.apply_translation([(width/2 - 1.0), 0, 0])
+    return trimesh.boolean.union([cyl, cap_l, cap_r])
+
+
+def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
+    """
+    Fingertip phalanx with realistic rounded organic contour:
+    - Smooth rounded base condyles with full wall thickness around hardware seats
+    - Ergonomic palmar pulp (finger pad) and dorsal nail curvature
+    - Rounded fingertip apex dome (no flat faces)
     - Female clevis socket at the base receives the intermediate's distal male tongue
     - Concealed M3 screw head counterbore (left wall) & nut pocket (right wall)
     - Continuous Ø2.5 mm tendon bore
     - Compact dorsal knot anchor chamber
     """
-    # Full-width base hub — gives thick walls so the carved socket is strong
-    base_hub = cylinder(radius=height * 0.46, height=width * 0.92, sections=36)
-    base_hub.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    base = make_base_condyles(width, height)
 
     pulp = icosphere(subdivisions=3, radius=1.0)
-    pulp.apply_scale([width * 0.46, length * 0.38, height * 0.48])
-    pulp.apply_translation([0, length * 0.65, -height * 0.12])
+    pulp.apply_scale([width * 0.46, length * 0.42, height * 0.48])
+    pulp.apply_translation([0, length * 0.60, -height * 0.10])
+
+    dorsal = icosphere(subdivisions=3, radius=1.0)
+    dorsal.apply_scale([width * 0.44, length * 0.40, height * 0.44])
+    dorsal.apply_translation([0, length * 0.55, height * 0.08])
 
     apex = icosphere(subdivisions=3, radius=1.0)
-    apex.apply_scale([width * 0.42, height * 0.42, height * 0.42])
+    apex.apply_scale([width * 0.40, height * 0.40, height * 0.40])
     apex.apply_translation([0, length - 1.2, 0])
 
-    smooth_body = trimesh.boolean.union([base_hub, pulp, apex]).convex_hull
+    smooth_body = trimesh.boolean.union([base, pulp, dorsal, apex]).convex_hull
 
     cutters = []
 
     # 1. Female clevis socket at base — intermediate's distal tongue slides in here
-    #    Pocket radius = HUB_R_FRAC * height (female side, no FDM_CLEARANCE subtracted)
-    slot_cyl = cylinder(radius=height * HUB_R_FRAC, height=CLEVIS_SLOT_W, sections=32)
+    slot_cyl = cylinder(radius=height * HUB_R_FRAC, height=CLEVIS_SLOT_W, sections=36)
     slot_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     slot_cyl.apply_translation([0, 1.0, 0])
-    slot_box = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.2])
+    slot_box = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.3])
     slot_box.apply_translation([0, -2.0, 0])
     cutters.append(trimesh.boolean.union([slot_cyl, slot_box]))
 
@@ -129,62 +152,46 @@ def generate_distal_phalanx(length=25.0, width=12.0, height=11.0):
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
 
-def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
+def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     """
-    Intermediate phalanx with natural, anatomical rounded finger contour:
-    - Longitudinal elliptical shaft (continuous 360° curvature, no cuboidal/flat sides)
-    - Anatomical spherical condyle knuckles at proximal and distal joints
-    - Cylindrical hinge hubs with rounded transitions
-    - Filleted clevis root pockets (no sharp notch corners)
+    Intermediate phalanx with realistic rounded organic contour:
+    - Smooth rounded base condyles eliminating sharp cylinder edges
+    - Seamless tangent lofted body eliminating valleys, notches, and waist creases
+    - Sized in organic harmony with proximal and distal segments
+    - Calibrated male clevis tongue matching distal socket
     - Concealed M3 screw head counterbore on left, nut pocket on right
     - Continuous Ø2.5 mm tendon bore
     """
-    r_x = width * 0.48
-    r_z = height * 0.46
+    hub_r = height * HUB_R_FRAC - FDM_CLEARANCE  # male tongue radius (matches female socket)
 
-    # 1. Main longitudinal shaft: elliptical cross section along Y
-    shaft = cylinder(radius=1.0, height=length * 0.90, sections=48)
-    shaft.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
-    shaft.apply_translation([0, length * 0.50, 0])
-    shaft.apply_scale([r_x, 1.0, r_z])
+    # 1. Seamless organic body with rounded base and smooth midshaft
+    base = make_base_condyles(width, height)
 
-    # 2. Rounded condyle knuckles
-    knuckle_prox = icosphere(subdivisions=3, radius=1.0)
-    knuckle_prox.apply_scale([width * 0.50, height * 0.48, height * 0.48])
-    knuckle_prox.apply_translation([0, 0, 0])
+    shaft_mid = icosphere(subdivisions=3, radius=1.0)
+    shaft_mid.apply_scale([width * 0.47, length * 0.42, height * 0.46])
+    shaft_mid.apply_translation([0, length * 0.48, 0])
 
-    knuckle_dist = icosphere(subdivisions=3, radius=1.0)
-    knuckle_dist.apply_scale([width * 0.47, height * 0.46, height * 0.46])
-    knuckle_dist.apply_translation([0, length, 0])
+    distal_hub = cylinder(radius=hub_r, height=width * 0.88, sections=36)
+    distal_hub.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    distal_hub.apply_translation([0, length, 0])
 
-    # 3. Pin housing hinge hubs
-    hub_prox = cylinder(radius=height * 0.46, height=width - 1.2, sections=36)
-    hub_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-
-    # hub_dist forms the male tongue body — radius must clear the distal socket
-    # (HUB_R_FRAC * height) - FDM_CLEARANCE so it slides in without binding
-    hub_dist = cylinder(radius=height * HUB_R_FRAC - FDM_CLEARANCE, height=width * 0.88, sections=36)
-    hub_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    hub_dist.apply_translation([0, length, 0])
-
-    smooth_body = trimesh.boolean.union([shaft, knuckle_prox, knuckle_dist, hub_prox, hub_dist])
+    smooth_body = trimesh.boolean.union([base, shaft_mid, distal_hub]).convex_hull
 
     cutters = []
     # Proximal clevis cut with rounded root fillet
-    c_bottom_prox = cylinder(radius=height * 0.38, height=CLEVIS_SLOT_W, sections=32)
+    c_bottom_prox = cylinder(radius=height * HUB_R_FRAC, height=CLEVIS_SLOT_W, sections=32)
     c_bottom_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     c_bottom_prox.apply_translation([0, 1.0, 0])
-    c_box_prox = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.2])
+    c_box_prox = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.3])
     c_box_prox.apply_translation([0, -2.0, 0])
     cutters.append(trimesh.boolean.union([c_bottom_prox, c_box_prox]))
 
     # Distal end: MALE TONGUE — lateral cuts narrow the hub to CLEVIS_TONGUE_W
-    # (same pattern as proximal phalanx distal tongue; minus FDM_CLEARANCE so
-    #  tongue slides cleanly into the distal phalanx's carved female socket)
-    cut_side_l = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
-    cut_side_l.apply_translation([-(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
-    cut_side_r = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
-    cut_side_r.apply_translation([(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
+    cut_w = (width - CLEVIS_TONGUE_W) / 2 + 2.0
+    cut_side_l = box(extents=[cut_w, 14.0, height * 1.5])
+    cut_side_l.apply_translation([-(CLEVIS_TONGUE_W / 2 + cut_w / 2), length, 0])
+    cut_side_r = box(extents=[cut_w, 14.0, height * 1.5])
+    cut_side_r.apply_translation([(CLEVIS_TONGUE_W / 2 + cut_w / 2), length, 0])
     cutters.extend([cut_side_l, cut_side_r])
 
     # Proximal hinge pin & concealed screw/nut seats
@@ -202,8 +209,7 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     cb_p_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
     cutters.append(cb_p_nut)
 
-    # Distal hinge pin through the male tongue — screw/nut now live on the
-    # distal phalanx's fork walls, so only the through-bore is needed here
+    # Distal hinge pin through the male tongue
     pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
@@ -218,59 +224,46 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
 
-def generate_proximal_phalanx(length=38.0, width=13.5, height=12.5):
+def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     """
-    Proximal phalanx with natural, anatomical rounded finger contour:
-    - Longitudinal elliptical shaft (continuous 360° curvature, no cuboidal/flat sides)
-    - Anatomical spherical condyle knuckles at base and distal ends
-    - Cylindrical hinge hubs with rounded transitions
-    - Rounded clevis root, no sharp re-entrant corners
+    Proximal phalanx with realistic rounded organic contour:
+    - Smooth rounded base condyles eliminating sharp cylinder edges
+    - Seamless tangent lofted body eliminating valleys, notches, and waist creases
+    - Sized in organic harmony with intermediate and distal segments (unified single-finger feel)
+    - Female knuckle joint at base and male tongue at distal joint
     - Concealed M3 screw head counterbore on left, nut pocket on right
-    - Smooth chamfered male clevis tongue at distal end
     - Continuous Ø2.5 mm tendon bore
     """
-    r_x = width * 0.48
-    r_z = height * 0.46
+    hub_r = height * HUB_R_FRAC - FDM_CLEARANCE  # male tongue radius (matches intermediate socket)
 
-    # 1. Main longitudinal shaft: elliptical cross section along Y
-    shaft = cylinder(radius=1.0, height=length * 0.90, sections=48)
-    shaft.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
-    shaft.apply_translation([0, length * 0.50, 0])
-    shaft.apply_scale([r_x, 1.0, r_z])
+    # 1. Seamless organic body with rounded base and smooth midshaft
+    base = make_base_condyles(width, height)
 
-    # 2. Rounded condyle knuckles
-    knuckle_prox = icosphere(subdivisions=3, radius=1.0)
-    knuckle_prox.apply_scale([width * 0.50, height * 0.48, height * 0.48])
-    knuckle_prox.apply_translation([0, 0, 0])
+    shaft_mid = icosphere(subdivisions=3, radius=1.0)
+    shaft_mid.apply_scale([width * 0.47, length * 0.42, height * 0.46])
+    shaft_mid.apply_translation([0, length * 0.48, 0])
 
-    knuckle_dist = icosphere(subdivisions=3, radius=1.0)
-    knuckle_dist.apply_scale([width * 0.47, height * 0.46, height * 0.46])
-    knuckle_dist.apply_translation([0, length, 0])
+    distal_hub = cylinder(radius=hub_r, height=width * 0.88, sections=36)
+    distal_hub.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    distal_hub.apply_translation([0, length, 0])
 
-    # 3. Pin housing hinge hubs
-    hub_prox = cylinder(radius=height * 0.46, height=width - 1.2, sections=36)
-    hub_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-
-    hub_dist = cylinder(radius=height * 0.44, height=width * 0.88, sections=36)
-    hub_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    hub_dist.apply_translation([0, length, 0])
-
-    smooth_body = trimesh.boolean.union([shaft, knuckle_prox, knuckle_dist, hub_prox, hub_dist])
+    smooth_body = trimesh.boolean.union([base, shaft_mid, distal_hub]).convex_hull
 
     cutters = []
     # Proximal clevis cut with rounded root fillet
-    c_bottom_prox = cylinder(radius=height * 0.38, height=CLEVIS_SLOT_W, sections=32)
+    c_bottom_prox = cylinder(radius=height * HUB_R_FRAC, height=CLEVIS_SLOT_W, sections=32)
     c_bottom_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     c_bottom_prox.apply_translation([0, 1.0, 0])
-    c_box_prox = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.2])
+    c_box_prox = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.3])
     c_box_prox.apply_translation([0, -2.0, 0])
     cutters.append(trimesh.boolean.union([c_bottom_prox, c_box_prox]))
 
     # Clean lateral reliefs to form 4.4 mm distal male tongue
-    cut_side_l = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
-    cut_side_l.apply_translation([-(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
-    cut_side_r = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
-    cut_side_r.apply_translation([(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
+    cut_w = (width - CLEVIS_TONGUE_W) / 2 + 2.0
+    cut_side_l = box(extents=[cut_w, 14.0, height * 1.5])
+    cut_side_l.apply_translation([-(CLEVIS_TONGUE_W / 2 + cut_w / 2), length, 0])
+    cut_side_r = box(extents=[cut_w, 14.0, height * 1.5])
+    cut_side_r.apply_translation([(CLEVIS_TONGUE_W / 2 + cut_w / 2), length, 0])
     cutters.extend([cut_side_l, cut_side_r])
 
     # Hinge pin bores
@@ -518,18 +511,18 @@ def build_iteration_2():
     components = [palm]
 
     digit_configs = [
-        {"name": "index",  "w_prox": 13.5, "w_mid": 12.0, "w_dist": 12.0, "len_p": 36.0, "len_i": 26.0, "len_d": 24.0, "x": -23.0, "y": PALM_L - 2.5, "z": 0.4, "rotZ": 0.07, "fm": 0.32, "fp": 0.42, "fd": 0.25},
-        {"name": "middle", "w_prox": 14.5, "w_mid": 13.0, "w_dist": 12.8, "len_p": 40.0, "len_i": 29.0, "len_d": 25.5, "x":  -8.0, "y": PALM_L,       "z": 0.8, "rotZ": 0.02, "fm": 0.28, "fp": 0.38, "fd": 0.22},
-        {"name": "ring",   "w_prox": 13.5, "w_mid": 12.2, "w_dist": 12.0, "len_p": 37.0, "len_i": 26.5, "len_d": 23.5, "x":   8.0, "y": PALM_L - 1.2, "z": 0.3, "rotZ": -0.04, "fm": 0.30, "fp": 0.40, "fd": 0.25},
-        {"name": "pinky",  "w_prox": 12.5, "w_mid": 11.2, "w_dist": 11.0, "len_p": 31.0, "len_i": 22.5, "len_d": 20.0, "x":  23.0, "y": PALM_L - 3.8, "z": -0.4, "rotZ": -0.10, "fm": 0.34, "fp": 0.44, "fd": 0.28}
+        {"name": "index",  "w_prox": 12.6, "w_mid": 12.2, "w_dist": 12.0, "len_p": 34.0, "len_i": 25.5, "len_d": 24.0, "x": -23.0, "y": PALM_L - 2.5, "z": 0.4, "rotZ": 0.07, "fm": 0.32, "fp": 0.42, "fd": 0.25},
+        {"name": "middle", "w_prox": 13.4, "w_mid": 12.8, "w_dist": 12.6, "len_p": 38.0, "len_i": 28.0, "len_d": 25.5, "x":  -8.0, "y": PALM_L,       "z": 0.8, "rotZ": 0.02, "fm": 0.28, "fp": 0.38, "fd": 0.22},
+        {"name": "ring",   "w_prox": 12.8, "w_mid": 12.4, "w_dist": 12.0, "len_p": 35.0, "len_i": 26.0, "len_d": 23.5, "x":   8.0, "y": PALM_L - 1.2, "z": 0.3, "rotZ": -0.04, "fm": 0.30, "fp": 0.40, "fd": 0.25},
+        {"name": "pinky",  "w_prox": 11.8, "w_mid": 11.4, "w_dist": 11.0, "len_p": 30.0, "len_i": 22.0, "len_d": 20.0, "x":  23.0, "y": PALM_L - 3.8, "z": -0.4, "rotZ": -0.10, "fm": 0.34, "fp": 0.44, "fd": 0.28}
     ]
 
     print("[3/5] Generating & Exporting All 4 Finger Digits with Concealed Screws (v2)..." )
     for d in digit_configs:
         dname = d["name"]
-        p = generate_proximal_phalanx(length=d["len_p"], width=d["w_prox"], height=12.5)
-        ip = generate_intermediate_phalanx(length=d["len_i"], width=d["w_mid"], height=11.5)
-        dp = generate_distal_phalanx(length=d["len_d"], width=d["w_dist"], height=11.0)
+        p = generate_proximal_phalanx(length=d["len_p"], width=d["w_prox"], height=12.0)
+        ip = generate_intermediate_phalanx(length=d["len_i"], width=d["w_mid"], height=11.6)
+        dp = generate_distal_phalanx(length=d["len_d"], width=d["w_dist"], height=11.2)
 
         p.export(os.path.join(STL_DIR_V2, f"{dname}_proximal_v2.stl"))
         ip.export(os.path.join(STL_DIR_V2, f"{dname}_intermediate_v2.stl"))
