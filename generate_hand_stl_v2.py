@@ -48,6 +48,15 @@ TENDON_RADIUS = 1.25     # 2.5 mm diameter continuous internal cable bore
 CLEVIS_SLOT_W = 5.2      # Female clevis pocket width
 CLEVIS_TONGUE_W = 4.4    # Male clevis tongue width (0.4 mm clearance each side)
 
+# FDM print shrinkage / inter-part clearance (applied to male features)
+# Increase to 0.30 if your printer runs tight; decrease to 0.20 if loose.
+FDM_CLEARANCE = 0.25     # mm subtracted from each male radius
+
+# Hub radius fraction used for BOTH the distal male tongue AND the
+# intermediate female clevis pocket — must stay identical so parts mate.
+# Value chosen so hub_r (≈4.37 mm) < pocket_r (≈4.37 mm) after clearance.
+HUB_R_FRAC = 0.38        # hub_radius = height * HUB_R_FRAC
+
 # Concealed M3 screw head and nut counterbore dimensions
 SCREW_HEAD_R = 3.25      # 6.5 mm diameter counterbore for M3 screw head
 SCREW_HEAD_DEPTH = 2.6   # 2.6 mm deep (fully conceals M3 socket / button head)
@@ -58,12 +67,15 @@ NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
 def generate_distal_phalanx(length=25.0, width=12.0, height=11.0):
     """
     Fingertip phalanx with seamless organic contour:
-    - Smooth tangent loft from base hinge hub into rounded fingertip pulp
+    - Full-width base hub provides wall material for the female clevis socket
+    - Female clevis socket at the base receives the intermediate's distal male tongue
+    - Concealed M3 screw head counterbore (left wall) & nut pocket (right wall)
     - Continuous Ø2.5 mm tendon bore
     - Compact dorsal knot anchor chamber
     """
-    k_base = cylinder(radius=height * 0.48, height=CLEVIS_TONGUE_W, sections=40)
-    k_base.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    # Full-width base hub — gives thick walls so the carved socket is strong
+    base_hub = cylinder(radius=height * 0.46, height=width * 0.92, sections=36)
+    base_hub.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
     pulp = icosphere(subdivisions=3, radius=1.0)
     pulp.apply_scale([width * 0.46, length * 0.38, height * 0.48])
@@ -73,23 +85,48 @@ def generate_distal_phalanx(length=25.0, width=12.0, height=11.0):
     apex.apply_scale([width * 0.42, height * 0.42, height * 0.42])
     apex.apply_translation([0, length - 1.2, 0])
 
-    smooth_body = trimesh.boolean.union([k_base, pulp, apex]).convex_hull
+    smooth_body = trimesh.boolean.union([base_hub, pulp, apex]).convex_hull
 
-    # 1. Pin hole
+    cutters = []
+
+    # 1. Female clevis socket at base — intermediate's distal tongue slides in here
+    #    Pocket radius = HUB_R_FRAC * height (female side, no FDM_CLEARANCE subtracted)
+    slot_cyl = cylinder(radius=height * HUB_R_FRAC, height=CLEVIS_SLOT_W, sections=32)
+    slot_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    slot_cyl.apply_translation([0, 1.0, 0])
+    slot_box = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.2])
+    slot_box.apply_translation([0, -2.0, 0])
+    cutters.append(trimesh.boolean.union([slot_cyl, slot_box]))
+
+    # 2. Pin hole through the socket fork walls
     pin_cutter = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_cutter.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cutters.append(pin_cutter)
 
-    # 2. Continuous through-bore
+    # 3. Concealed M3 screw head counterbore (left fork wall)
+    cb_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=32)
+    cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_head)
+
+    # 4. Concealed M3 nut pocket (right fork wall)
+    cb_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=32)
+    cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
+    cutters.append(cb_nut)
+
+    # 5. Continuous tendon bore
     tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     tendon_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     tendon_bore.apply_translation([0, length / 2, -height * 0.16])
+    cutters.append(tendon_bore)
 
-    # 3. Compact dorsal knot chamber with smooth fillets
+    # 6. Compact dorsal knot anchor chamber
     anchor_pocket = box(extents=[4.5, 5.0, height * 0.48])
     anchor_pocket.apply_translation([0, length * 0.65, 0.6])
+    cutters.append(anchor_pocket)
 
-    cutters = trimesh.boolean.union([pin_cutter, tendon_bore, anchor_pocket])
-    return smooth_body.difference(cutters)
+    return smooth_body.difference(trimesh.boolean.union(cutters))
 
 
 def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
@@ -124,7 +161,9 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     hub_prox = cylinder(radius=height * 0.46, height=width - 1.2, sections=36)
     hub_prox.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
 
-    hub_dist = cylinder(radius=height * 0.44, height=width * 0.88, sections=36)
+    # hub_dist forms the male tongue body — radius must clear the distal socket
+    # (HUB_R_FRAC * height) - FDM_CLEARANCE so it slides in without binding
+    hub_dist = cylinder(radius=height * HUB_R_FRAC - FDM_CLEARANCE, height=width * 0.88, sections=36)
     hub_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     hub_dist.apply_translation([0, length, 0])
 
@@ -139,13 +178,14 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     c_box_prox.apply_translation([0, -2.0, 0])
     cutters.append(trimesh.boolean.union([c_bottom_prox, c_box_prox]))
 
-    # Distal clevis cut with rounded root fillet
-    c_bottom_dist = cylinder(radius=height * 0.38, height=CLEVIS_SLOT_W, sections=32)
-    c_bottom_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    c_bottom_dist.apply_translation([0, length - 1.0, 0])
-    c_box_dist = box(extents=[CLEVIS_SLOT_W, 8.0, height * 1.2])
-    c_box_dist.apply_translation([0, length + 2.0, 0])
-    cutters.append(trimesh.boolean.union([c_bottom_dist, c_box_dist]))
+    # Distal end: MALE TONGUE — lateral cuts narrow the hub to CLEVIS_TONGUE_W
+    # (same pattern as proximal phalanx distal tongue; minus FDM_CLEARANCE so
+    #  tongue slides cleanly into the distal phalanx's carved female socket)
+    cut_side_l = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
+    cut_side_l.apply_translation([-(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
+    cut_side_r = box(extents=[(width - CLEVIS_TONGUE_W)/2 + 2.0, 14.0, height * 1.5])
+    cut_side_r.apply_translation([(CLEVIS_TONGUE_W/2 + (width - CLEVIS_TONGUE_W)/4 + 1.0), length, 0])
+    cutters.extend([cut_side_l, cut_side_r])
 
     # Proximal hinge pin & concealed screw/nut seats
     pin_prox = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
@@ -162,21 +202,12 @@ def generate_intermediate_phalanx(length=28.0, width=12.5, height=11.5):
     cb_p_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
     cutters.append(cb_p_nut)
 
-    # Distal hinge pin & concealed screw/nut seats
+    # Distal hinge pin through the male tongue — screw/nut now live on the
+    # distal phalanx's fork walls, so only the through-bore is needed here
     pin_dist = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=32)
     pin_dist.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     pin_dist.apply_translation([0, length, 0])
     cutters.append(pin_dist)
-
-    cb_d_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=32)
-    cb_d_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    cb_d_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, length, 0])
-    cutters.append(cb_d_head)
-
-    cb_d_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=32)
-    cb_d_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    cb_d_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, length, 0])
-    cutters.append(cb_d_nut)
 
     # Continuous internal tendon bore
     t_flex = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
