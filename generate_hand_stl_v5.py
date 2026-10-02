@@ -243,9 +243,10 @@ def create_male_tongue_cutters(length, width, height):
 def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     """
     v5 Fingertip phalanx:
-    - PALMAR bore (z = -height*0.16): servo wire for active flexion  [anterior]
-    - DORSAL anchor slot near tip  : rubber band end knotted here    [posterior]
-    - Completely solid interior — only those two features break the surface.
+    - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
+    - DORSAL full-length groove     : rubber band runs along here      [posterior]
+    - TRANSVERSE retention bore at 80% length: rubber band threads
+      through this Ø2.0mm bore, is knotted on the far side to lock it.
     """
     base = make_base_condyles_v4(width, height)
 
@@ -273,15 +274,22 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     tendon_bore.apply_translation([0, length / 2, bore_z])
     cutters.append(tendon_bore)
 
-    # --- POSTERIOR: dorsal rubber band anchor slot ---
-    # A rectangular pocket on the dorsal (top) surface near the fingertip.
-    # The rubber band end is looped through and knotted, or secured with superglue.
-    # Position: 75% along the length, sitting on the dorsal skin (z = height*0.44).
-    # The pocket cuts 3mm INTO the part from the dorsal surface.
-    anchor_z = height * 0.44 - RB_ANCHOR_D / 2   # centre so top is flush with skin
-    rb_anchor = box(extents=[RB_ANCHOR_W, RB_ANCHOR_L, RB_ANCHOR_D])
-    rb_anchor.apply_translation([0, length * 0.75, anchor_z])
-    cutters.append(rb_anchor)
+    # --- POSTERIOR: full-length dorsal groove ---
+    # Runs the entire length of the phalanx (length+20 ensures it exits both faces).
+    # Skin peak z ≈ height*0.44; groove centre at (height*0.44 - RB_GROOVE_D/2)
+    # so the groove cuts exactly RB_GROOVE_D deep into the dorsal surface.
+    groove_z = height * 0.44 - RB_GROOVE_D / 2
+    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
+    rb_groove.apply_translation([0, length / 2, groove_z])
+    cutters.append(rb_groove)
+
+    # --- POSTERIOR: transverse rubber band retention bore at 80% length ---
+    # A Ø2.0mm hole crossing through the part perpendicular to the groove.
+    # Thread the rubber band end through, pull tight, tie a knot on the inside.
+    rb_retention = cylinder(radius=1.0, height=width + 4.0, sections=20)
+    rb_retention.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    rb_retention.apply_translation([0, length * 0.80, groove_z])
+    cutters.append(rb_retention)
 
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
@@ -289,9 +297,10 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
 def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     """
     v5 Intermediate phalanx:
-    - PALMAR bore (z = -height*0.16): servo wire for active flexion  [anterior]
-    - DORSAL groove along body     : rubber band routing channel      [posterior]
-      Groove is 3.5 mm wide × 2.0 mm deep, centred on dorsal surface.
+    - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
+    - DORSAL full-length groove     : rubber band routing channel      [posterior]
+      Groove (RB_GROOVE_W wide × RB_GROOVE_D deep) runs the entire segment length,
+      exiting both end-faces so it is continuous with adjacent segments.
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
@@ -306,14 +315,12 @@ def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
 
-    # --- POSTERIOR: dorsal rubber band routing groove ---
-    # Groove runs along 80% of the segment length (20% from each end excluded
-    # so groove doesn't open into the clevis/tongue joint faces).
-    # Skin peak z ≈ height*0.44; groove centre at height*0.42 so groove cuts
-    # RB_GROOVE_D = 2mm INTO the surface (visible saddle on dorsal side).
+    # --- POSTERIOR: full-length dorsal groove ---
+    # length+20 guarantees the groove exits both end-faces of the segment,
+    # so across the assembled finger it forms one unbroken channel.
     groove_z = height * 0.44 - RB_GROOVE_D / 2
-    rb_groove = box(extents=[RB_GROOVE_W, length * 0.80, RB_GROOVE_D])
-    rb_groove.apply_translation([0, length * 0.50, groove_z])
+    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
+    rb_groove.apply_translation([0, length / 2, groove_z])
     cutters.append(rb_groove)
 
     return body.difference(trimesh.boolean.union(cutters))
@@ -322,9 +329,10 @@ def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
 def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     """
     v5 Proximal phalanx:
-    - PALMAR bore (z = -height*0.16): servo wire for active flexion  [anterior]
-    - DORSAL groove along body     : rubber band routing channel      [posterior]
-      Groove is 3.5 mm wide × 2.0 mm deep, centred on dorsal surface.
+    - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
+    - DORSAL full-length groove     : rubber band routing channel      [posterior]
+      Groove (RB_GROOVE_W wide × RB_GROOVE_D deep) runs the entire segment length,
+      exiting both end-faces so it is continuous with adjacent segments.
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
@@ -339,10 +347,10 @@ def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
 
-    # --- POSTERIOR: dorsal rubber band routing groove ---
+    # --- POSTERIOR: full-length dorsal groove ---
     groove_z = height * 0.44 - RB_GROOVE_D / 2
-    rb_groove = box(extents=[RB_GROOVE_W, length * 0.80, RB_GROOVE_D])
-    rb_groove.apply_translation([0, length * 0.50, groove_z])
+    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
+    rb_groove.apply_translation([0, length / 2, groove_z])
     cutters.append(rb_groove)
 
     return body.difference(trimesh.boolean.union(cutters))
