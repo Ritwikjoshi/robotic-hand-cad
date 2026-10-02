@@ -195,8 +195,8 @@ def create_v6_clevis_cutters(width, height, is_distal=False):
     slot_cyl.apply_translation([0, 0.8, 0])
 
     # 2. One-directional slot box
-    z_roof = r_slot + 0.48          # Extension hard stop ceiling
-    z_floor_palmar = -height * 0.90 # Wide palmar flexion clearance
+    z_roof = r_slot + (0.48 if is_distal else 0.53)  # Extension hard stop ceiling
+    z_floor_palmar = -height * 0.90                  # Wide palmar flexion clearance
     box_h = z_roof - z_floor_palmar
     box_zc = (z_roof + z_floor_palmar) / 2.0
 
@@ -257,13 +257,37 @@ def create_male_tongue_cutters(length, width, height):
     return cutters
 
 
+def make_ramp_cutter(width, y0, y1, z0, z1, z_top=15.0):
+    """
+    Creates an exact trapezoidal prism cutter whose floor slopes monotonically
+    from (y0, z0) to (y1, z1) and extends open upwards to z_top, with width along X.
+    Guarantees zero cuts outside [y0, y1].
+    """
+    hw = width / 2.0
+    pts = np.array([
+        [-hw, y0, z0],
+        [ hw, y0, z0],
+        [-hw, y1, z1],
+        [ hw, y1, z1],
+        [-hw, y0, z_top],
+        [ hw, y0, z_top],
+        [-hw, y1, z_top],
+        [ hw, y1, z_top],
+    ])
+    return trimesh.convex.convex_hull(pts)
+
+
 def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridge_len=3.2, is_distal=False, anchor_y_frac=0.78):
     """
     Creates cutters for the concealed dorsal rubber band routing:
-    - Open-from-above groove segments before and after the bridge (+Z open to the air).
-    - A tunnel cutter (inner_h = 1.6mm) passing under the bridge at depth z_floor.
-    - Leaves an intact, solid bridge (RB_BRIDGE_ROOF = 1.3mm) perfectly flush with the natural
-      dorsal surface of the phalanx — completely CONCEALED with ZERO protrusion!
+    - Starts strictly in front of female clevis root (y_start = 0.8 + r_slot + 1.2mm)
+      with a smooth 45° lead-in ramp, preventing break-through into clevis slot or M3 counterbores.
+    - Flat groove segment at z_floor before bridge (+Z open to the air).
+    - A tunnel cutter (inner_h = 1.6mm) passing under the flush bridge at depth z_floor.
+    - Flat groove segment after bridge.
+    - On intermediate and proximal: stops before the male tongue hub with a smooth 45° exit ramp.
+    - On distal: extends directly to meet the transverse retention bore.
+    - Leaves intact, solid bridge (RB_BRIDGE_ROOF = 1.3mm) perfectly flush with natural dorsal skin.
     """
     groove_w = RB_GROOVE_W
     inner_h = RB_INNER_H
@@ -273,28 +297,64 @@ def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridg
     z_surf = height * (0.44 if is_distal else 0.446)
     z_tunnel_top = z_surf - bridge_roof
     z_floor = z_tunnel_top - inner_h
+    depth = z_surf - z_floor
 
     cutters = []
 
-    # Open-from-above groove segment 1 (base to bridge)
-    y1_len = (loop_y - bridge_len / 2) + 10.0
-    y1_c = (loop_y - bridge_len / 2 - 10.0) / 2
-    cut1 = box(extents=[groove_w, y1_len, 12.0])
-    cut1.apply_translation([0, y1_c, z_floor + 6.0])
-    cutters.append(cut1)
+    # Female clevis root clearance:
+    # Concentric slot cylinder center is y=0.8, radius r_slot.
+    # We enforce y_start at least 1.2mm beyond the cylinder distal extent.
+    r_slot = height * HUB_R_FRAC + 0.15
+    y_start = 0.8 + r_slot + 1.2
 
-    # Open-from-above groove segment 2 (bridge to distal end or anchor)
-    end_y = (length * anchor_y_frac + 2.0) if is_distal else (length + 10.0)
-    y2_len = end_y - (loop_y + bridge_len / 2)
-    y2_c = (loop_y + bridge_len / 2 + end_y) / 2
-    cut2 = box(extents=[groove_w, y2_len, 12.0])
-    cut2.apply_translation([0, y2_c, z_floor + 6.0])
-    cutters.append(cut2)
+    # Distal boundary:
+    if is_distal:
+        y_end = length * anchor_y_frac + 2.0
+    else:
+        hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
+        y_end = length - hub_r - 0.8
 
-    # Tunnel under bridge
-    tunnel = box(extents=[groove_w, bridge_len + 2.0, inner_h])
+    y_bridge_start = loop_y - bridge_len / 2
+    y_bridge_end = loop_y + bridge_len / 2
+
+    # 1. 45-degree smooth lead-in ramp at y_start
+    ramp_len = min(depth, (y_bridge_start - y_start) * 0.45)
+    ramp_in = make_ramp_cutter(groove_w, y_start, y_start + ramp_len, z_surf, z_floor)
+    cutters.append(ramp_in)
+
+    # 2. Segment 1: Open groove between lead-in ramp and bridge
+    y1_start = y_start + ramp_len
+    if y_bridge_start > y1_start:
+        y1_len = y_bridge_start - y1_start
+        y1_c = (y1_start + y_bridge_start) / 2
+        cut1 = box(extents=[groove_w, y1_len + 0.1, 12.0])
+        cut1.apply_translation([0, y1_c, z_floor + 6.0])
+        cutters.append(cut1)
+
+    # 3. Concealed tunnel under flush bridge
+    tunnel = box(extents=[groove_w, bridge_len + 0.2, inner_h])
     tunnel.apply_translation([0, loop_y, z_floor + inner_h / 2])
     cutters.append(tunnel)
+
+    # 4. Segment 2: Open groove after bridge + lead-out ramp
+    if is_distal:
+        y2_len = y_end - y_bridge_end
+        y2_c = (y_bridge_end + y_end) / 2
+        cut2 = box(extents=[groove_w, y2_len, 12.0])
+        cut2.apply_translation([0, y2_c, z_floor + 6.0])
+        cutters.append(cut2)
+    else:
+        ramp_out_len = min(depth, (y_end - y_bridge_end) * 0.45)
+        y2_end = y_end - ramp_out_len
+        if y2_end > y_bridge_end:
+            y2_len = y2_end - y_bridge_end
+            y2_c = (y_bridge_end + y2_end) / 2
+            cut2 = box(extents=[groove_w, y2_len + 0.1, 12.0])
+            cut2.apply_translation([0, y2_c, z_floor + 6.0])
+            cutters.append(cut2)
+
+        ramp_out = make_ramp_cutter(groove_w, y_end - ramp_out_len, y_end, z_floor, z_surf)
+        cutters.append(ramp_out)
 
     return cutters, z_floor
 
