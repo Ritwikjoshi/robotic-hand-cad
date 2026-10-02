@@ -176,39 +176,38 @@ def generate_organic_body_v4(length, width, height, hub_r_dist):
 def create_v6_clevis_cutters(width, height, is_distal=False):
     """
     Creates v6 female clevis cutters with ONE-DIRECTIONAL EXTENSION LIMIT HARD STOP:
-    1. Concentric slot cylinder (radius r_slot).
+    1. Concentric slot cylinder (radius r_slot, centered at y = 0.4mm).
     2. One-directional slot box:
        - Palmar side (-Z): opens wide down to -height*0.90 with 45° throat relief,
          allowing smooth, unhindered palmar flexion 0° to 95°.
-       - Dorsal side (+Z): ceiling is calibrated to r_slot + 0.48mm, perfectly
-         clearing the male tongue at 0° extension while creating a rigid mechanical
-         hard stop against any hyperextension (< 0°).
+       - Dorsal fork mouth (+Z): between fork prongs (y <= 0.4mm), opens freely to
+         the air (+Z = 15mm), eliminating paper-thin skins and window holes.
+       - Extension stop: solid ceiling against male tongue hyperextension (< 0°).
     3. Hinge pin hole (Ø3.4mm concentric).
     4. Concealed M3 screw head and nut counterbores (proximal and intermediate).
     """
     cutters = []
     r_slot = height * HUB_R_FRAC + 0.15
 
-    # 1. Main concentric slot cylinder
+    # 1. Main concentric slot cylinder (centered at y = 0.4)
     slot_cyl = cylinder(radius=r_slot, height=CLEVIS_SLOT_W, sections=40)
     slot_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    slot_cyl.apply_translation([0, 0.8, 0])
+    slot_cyl.apply_translation([0, 0.4, 0])
 
-    # 2. One-directional slot box
-    z_roof = r_slot + (0.45 if is_distal else 0.50)  # Extension hard stop ceiling
-    z_floor_palmar = -height * 0.90                  # Wide palmar flexion clearance
-    box_h = z_roof - z_floor_palmar
-    box_zc = (z_roof + z_floor_palmar) / 2.0
-
-    slot_box = box(extents=[CLEVIS_SLOT_W, 9.0, box_h])
-    slot_box.apply_translation([0, -2.5, box_zc])
+    # 2. One-directional slot box:
+    # Fork slot box (between fork prongs, y in [-6.0, 0.4]) - open to the air (+Z = 15.0):
+    z_floor_palmar = -height * 0.90
+    rear_y_len = 6.4
+    rear_y_c = 0.4 - rear_y_len / 2.0  # -2.8
+    slot_box_rear = box(extents=[CLEVIS_SLOT_W, rear_y_len, 25.0])
+    slot_box_rear.apply_translation([0, rear_y_c, (15.0 + z_floor_palmar) / 2.0])
 
     # 3. Palmar throat relief (45° wedge) allowing 95° flexion without notch cuts
     palmar_relief = box(extents=[CLEVIS_SLOT_W, 7.5, 7.5])
     palmar_relief.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/4, [1, 0, 0]))
     palmar_relief.apply_translation([0, 2.0, -height * 0.42])
 
-    cutters.append(trimesh.boolean.union([slot_cyl, slot_box, palmar_relief]))
+    cutters.append(trimesh.boolean.union([slot_cyl, slot_box_rear, palmar_relief]))
 
     if not is_distal:
         # Concealed M3 screw head counterbore (left fork wall)
@@ -279,15 +278,17 @@ def make_ramp_cutter(width, y0, y1, z0, z1, z_top=15.0):
 
 def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridge_len=3.2, is_distal=False, anchor_y_frac=0.78):
     """
-    Creates cutters for the continuous concealed dorsal rubber band routing:
-    - Seamless, unblocked open-from-above groove from the clevis joint through the bridge to the distal end.
-    - At the female clevis root (y_joint_entry = 3.2mm), the groove begins seamlessly where the mating
-      male tongue (4.2mm hub) enters, ensuring a 1.0mm overlap with zero gap and zero blockage.
-    - Calibrated depth (z_entry_floor) prevents cutting into the concentric slot cylinder or M3 counterbore walls,
-      ensuring thick, solid, fracture-resistant fork roots with zero breakthrough windows or thin arches.
-    - Smooth transition ramp descends to the concealed tunnel floor under the flush bridge (1.3mm roof).
-    - Distal groove continues across the male tongue (y = length + 6.0mm) so the rubber band can travel
-      continuously across all phalangeal joints without obstruction.
+    Creates cutters for the continuous, all-the-way-through dorsal rubber band routing:
+    - Runs UNINTERRUPTED from the very proximal tip (y = -6.0 mm) all the way through
+      to the distal end (y = length + 6.0 mm on proximal/intermediate, and through to tip on distal).
+    - At the female clevis root (y in [-6.0, y_clevis_root]), the groove floor is at a calibrated
+      depth of z_joint_floor = z_surf - 0.85 mm, guaranteeing ~1.0mm of solid plastic ceiling over
+      the clevis slot cylinder (zero breakthrough arch, zero window slits).
+    - A smooth ramp transitions from z_joint_floor down to z_tunnel_floor before the concealed bridge.
+    - An internal clearance tunnel (inner_h = 1.6 mm) passes under the flush bridge, preserving a
+      solid 1.3 mm bridge roof with zero surface protrusion.
+    - Distal to the bridge, the groove continues open from above all the way through the male tongue
+      (or into and through the distal retention bore to the fingertip).
     """
     groove_w = RB_GROOVE_W
     inner_h = RB_INNER_H
@@ -297,42 +298,45 @@ def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridg
     z_surf = height * (0.44 if is_distal else 0.446)
     z_tunnel_top = z_surf - bridge_roof
     z_tunnel_floor = z_tunnel_top - inner_h
-    z_entry_floor = z_surf - 0.85
+    z_joint_floor = z_surf - 0.85
 
     cutters = []
 
-    # Female clevis entry: starts at y = 3.2 mm (overlapping the mating male tongue's 4.2mm hub by 1.0mm)
-    # This guarantees the rubber band groove is 100% continuous and never blocked across the joint!
-    y_joint_entry = 3.2
+    r_slot = height * HUB_R_FRAC + 0.15
+    y_clevis_root = 0.4 + r_slot + 0.2
+
     y_bridge_start = loop_y - bridge_len / 2
     y_bridge_end = loop_y + bridge_len / 2
 
-    # 1. Seamless entry ramp from y_joint_entry to y_trans (descending from z_entry_floor to z_tunnel_floor)
-    y_trans = min(6.0, y_bridge_start - 1.0)
-    ramp_entry = make_ramp_cutter(groove_w, y_joint_entry, y_trans, z_entry_floor, z_tunnel_floor)
-    cutters.append(ramp_entry)
+    # 1. Base open groove running continuously from y = -6.0 mm through the clevis root
+    y_base_start = -6.0
+    y_base_len = y_clevis_root - y_base_start
+    y_base_c = (y_base_start + y_clevis_root) / 2
+    cut_base = box(extents=[groove_w, y_base_len + 0.1, 12.0])
+    cut_base.apply_translation([0, y_base_c, z_joint_floor + 6.0])
+    cutters.append(cut_base)
 
-    # 2. Open groove from y_trans to bridge
-    if y_bridge_start > y_trans:
-        cut1 = box(extents=[groove_w, y_bridge_start - y_trans + 0.1, 12.0])
-        cut1.apply_translation([0, (y_trans + y_bridge_start) / 2, z_tunnel_floor + 6.0])
-        cutters.append(cut1)
+    # 2. Smooth ramp from clevis root down into the shaft tunnel floor
+    if y_bridge_start > y_clevis_root:
+        ramp_in = make_ramp_cutter(groove_w, y_clevis_root, y_bridge_start, z_joint_floor, z_tunnel_floor)
+        cutters.append(ramp_in)
 
     # 3. Concealed tunnel under flush bridge
     tunnel = box(extents=[groove_w, bridge_len + 0.2, inner_h])
     tunnel.apply_translation([0, loop_y, z_tunnel_floor + inner_h / 2])
     cutters.append(tunnel)
 
-    # 4. Distal open groove
+    # 4. Distal open groove running all the way through to the end
     if is_distal:
-        y_end = length * anchor_y_frac + 2.0
+        # Continues all the way through the fingertip (intersecting the transverse retention bore)
+        y_end = length + 2.0
         y2_len = y_end - y_bridge_end
         y2_c = (y_bridge_end + y_end) / 2
         cut2 = box(extents=[groove_w, y2_len, 12.0])
         cut2.apply_translation([0, y2_c, z_tunnel_floor + 6.0])
         cutters.append(cut2)
     else:
-        # Runs through the male tongue all the way to length + 6.0 mm so it is never blocked
+        # Runs through the male tongue all the way to length + 6.0 mm
         y_end = length + 6.0
         y_ramp_dist = length - 4.5
         if y_ramp_dist > y_bridge_end:
@@ -342,11 +346,11 @@ def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridg
             cut2.apply_translation([0, y2_c, z_tunnel_floor + 6.0])
             cutters.append(cut2)
 
-            ramp_out = make_ramp_cutter(groove_w, y_ramp_dist, length - 1.0, z_tunnel_floor, z_entry_floor)
+            ramp_out = make_ramp_cutter(groove_w, y_ramp_dist, length - 1.0, z_tunnel_floor, z_joint_floor)
             cutters.append(ramp_out)
 
             cut_tongue = box(extents=[groove_w, y_end - (length - 1.0) + 0.1, 12.0])
-            cut_tongue.apply_translation([0, ((length - 1.0) + y_end) / 2, z_entry_floor + 6.0])
+            cut_tongue.apply_translation([0, ((length - 1.0) + y_end) / 2, z_joint_floor + 6.0])
             cutters.append(cut_tongue)
         else:
             cut2 = box(extents=[groove_w, y_end - y_bridge_end, 12.0])
