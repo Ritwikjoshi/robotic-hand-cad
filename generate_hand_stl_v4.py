@@ -168,10 +168,6 @@ def create_female_clevis_cutters(width, height, is_distal=False):
     slot_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     slot_cyl.apply_translation([0, 0.8, 0])
 
-    # Standard slot_box for proximal/intermediate (full height, centered at z=0)
-    slot_box = box(extents=[CLEVIS_SLOT_W, 9.0, height * 1.3])
-    slot_box.apply_translation([0, -2.5, 0])
-
     if is_distal:
         # Distal tip: slot_box must clear the intermediate shaft during BOTH:
         #   - Full extension (shaft rises +Z above pin): box goes up to +height*0.35
@@ -239,11 +235,11 @@ def create_male_tongue_cutters(length, width, height):
 
 def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     """
-    Fingertip phalanx — solid interior with servo wire bore + dorsal rubber band anchor:
+    Fingertip phalanx — completely solid interior with ONE channel:
     - Smooth rounded anatomical body (convex hull of base condyles + pulp + dorsal + apex)
     - Female clevis joint socket at base (slot + pin hole only, no palmar wedge)
-    - Palmar Ø2.5 mm bore (z = -height*0.16): servo wire channel for active FLEXION
-    - Dorsal anchor slot near tip: rubber band end attaches here for passive EXTENSION
+    - Single Ø2.5 mm tendon/wire bore running the full length
+    - NO anchor pocket, NO counterbores, NO internal cavities
     """
     base = make_base_condyles_v4(width, height)
 
@@ -265,18 +261,12 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     # Joint socket at base (no palmar relief, no counterbores — solid interior)
     cutters.extend(create_female_clevis_cutters(width, height, is_distal=True))
 
-    # PALMAR bore — servo wire for active flexion (anterior side)
+    # Tendon wire bore — the ONLY interior channel
     bore_z = -height * 0.16
     tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     tendon_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     tendon_bore.apply_translation([0, length / 2, bore_z])
     cutters.append(tendon_bore)
-
-    # DORSAL anchor slot — rubber band end ties here for passive extension (posterior side)
-    # Slot sits on dorsal surface: 4mm wide, 3mm long, 2mm deep recess
-    rb_anchor = box(extents=[4.0, 3.0, 2.5])
-    rb_anchor.apply_translation([0, length * 0.80, height * 0.35])
-    cutters.append(rb_anchor)
 
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
@@ -284,8 +274,11 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
 def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     """
     Intermediate phalanx with smooth, solid, filled geometry and full-ROM articulation:
-    - Palmar Ø2.5 mm bore (z = -height*0.16): servo wire for active flexion
-    - Dorsal routing groove (z = +height*0.36, 3mm wide, 1.8mm deep): guides rubber band
+    - Multi-station elliptical lofting with anatomical dorsal arch and cushioned palmar curve
+    - Solid female clevis socket at base with internal palmar relief
+    - Solid male tongue at distal end with unbroken reinforced shoulders
+    - Concealed M3 screw head counterbore on left, nut pocket on right
+    - Continuous Ø2.5 mm tendon bore
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
@@ -294,18 +287,11 @@ def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     cutters.extend(create_female_clevis_cutters(width, height))
     cutters.extend(create_male_tongue_cutters(length, width, height))
 
-    # PALMAR bore — servo wire for active flexion (anterior side)
+    # Continuous tendon bore
     t_flex = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     t_flex.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
-
-    # DORSAL routing groove — keeps rubber band centred along segment (posterior side)
-    # Groove runs 70% of the length, starting 10% from the proximal end.
-    # Depth: surface is at z≈height*0.44; groove top at height*0.36+0.9 ≈ surface → 1.8mm deep
-    rb_groove = box(extents=[3.0, length * 0.70, 1.8])
-    rb_groove.apply_translation([0, length * 0.45, height * 0.36])
-    cutters.append(rb_groove)
 
     return body.difference(trimesh.boolean.union(cutters))
 
@@ -313,8 +299,11 @@ def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
 def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     """
     Proximal phalanx with smooth, solid, filled geometry and full-ROM articulation:
-    - Palmar Ø2.5 mm bore (z = -height*0.16): servo wire for active flexion
-    - Dorsal routing groove (z = +height*0.36, 3mm wide, 1.8mm deep): guides rubber band
+    - Multi-station elliptical lofting with anatomical dorsal arch and cushioned palmar curve
+    - Solid female clevis socket at base with internal palmar relief
+    - Solid male tongue at distal end with unbroken reinforced shoulders
+    - Concealed M3 screw head counterbore on left, nut pocket on right
+    - Continuous Ø2.5 mm tendon bore
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
@@ -323,16 +312,11 @@ def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     cutters.extend(create_female_clevis_cutters(width, height))
     cutters.extend(create_male_tongue_cutters(length, width, height))
 
-    # PALMAR bore — servo wire for active flexion (anterior side)
+    # Continuous tendon bore
     t_flex = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     t_flex.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
-
-    # DORSAL routing groove — keeps rubber band centred along segment (posterior side)
-    rb_groove = box(extents=[3.0, length * 0.70, 1.8])
-    rb_groove.apply_translation([0, length * 0.45, height * 0.36])
-    cutters.append(rb_groove)
 
     return body.difference(trimesh.boolean.union(cutters))
 
@@ -459,17 +443,11 @@ def generate_palm(palm_w=PALM_W, palm_l=PALM_L, palm_h=PALM_H):
         p_hole.apply_translation([fx, py, fz])
         cutters.append(p_hole)
 
-        # PALMAR tendon tunnel — servo wire enters palm on anterior side
+        # Tendon tunnel leading into palm cavity
         t_tun = cylinder(radius=1.35, height=36.0, sections=20)
         t_tun.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
         t_tun.apply_translation([fx, py - 10.0, fz - 3.5])
         cutters.append(t_tun)
-
-        # DORSAL rubber band anchor slot — one per finger, on posterior palm surface
-        # Rubber band from proximal phalanx terminates here at the knuckle
-        rb_palm_anchor = box(extents=[4.0, 4.0, 2.5])
-        rb_palm_anchor.apply_translation([fx, py - 2.0, fz + 8.5])
-        cutters.append(rb_palm_anchor)
 
     # Thumb CMC Joint with concealed screw counterbores
     th_pos = [-palm_w * 0.36 - 2.5, palm_l * 0.28, -2.0]
