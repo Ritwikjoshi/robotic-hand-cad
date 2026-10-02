@@ -168,11 +168,12 @@ def create_female_clevis_cutters(width, height, is_distal=False):
     slot_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     slot_cyl.apply_translation([0, 0.8, 0])
 
-    slot_box = box(extents=[CLEVIS_SLOT_W, 9.0, height * 1.3])
-    slot_box.apply_translation([0, -2.5, 0])
-
     if is_distal:
-        # Distal tip: keep interior fully solid — only the joint slot opening + pin hole
+        # Distal tip: slot_box extends ONLY palmward (downward, -Z) so it never
+        # breaks through the dorsal surface. Top edge of box sits at z=0.
+        box_h = height * 0.9
+        slot_box = box(extents=[CLEVIS_SLOT_W, 9.0, box_h])
+        slot_box.apply_translation([0, -2.5, -box_h / 2])
         cutters.append(trimesh.boolean.union([slot_cyl, slot_box]))
     else:
         # 2. Internal slot palmar throat relief (proximal/intermediate only)
