@@ -222,20 +222,22 @@ def create_v6_clevis_cutters(width, height, is_distal=False):
 
     cutters.append(trimesh.boolean.union([slot_cyl, slot_box_rear, palmar_relief]))
 
-    if not is_distal:
-        # Concealed M3 screw head counterbore (left fork wall)
-        cb_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=36)
-        cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-        cb_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
-        cutters.append(cb_head)
+    # 4. Concealed M3 screw head counterbore (left fork wall) & nut pocket (right fork wall)
+    fork_wall = (width - CLEVIS_SLOT_W) / 2.0
+    h_depth = min(SCREW_HEAD_DEPTH, max(1.8, fork_wall - 0.7))
+    n_depth = min(NUT_DEPTH, max(1.8, fork_wall - 0.7))
 
-        # Concealed M3 nut pocket (right fork wall)
-        cb_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=36)
-        cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-        cb_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
-        cutters.append(cb_nut)
+    cb_head = cylinder(radius=SCREW_HEAD_R, height=h_depth + 2.0, sections=36)
+    cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_head.apply_translation([-width/2 + (h_depth - 2.0)/2, 0, 0])
+    cutters.append(cb_head)
 
-    # Concentric hinge pin hole (always present)
+    cb_nut = cylinder(radius=NUT_R, height=n_depth + 2.0, sections=36)
+    cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    cb_nut.apply_translation([width/2 - (n_depth - 2.0)/2, 0, 0])
+    cutters.append(cb_nut)
+
+    # 5. Concentric hinge pin hole (always present)
     pin_cutter = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=36)
     pin_cutter.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     cutters.append(pin_cutter)
