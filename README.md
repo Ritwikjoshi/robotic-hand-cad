@@ -39,17 +39,31 @@ A fully biomimetic end-effector platform designed to mirror human musculoskeleta
 
 ---
 
-## 4. Repository Contents
+## 4. CAD Iteration Status
 
+- **Iteration 7 (v7.0 - Latest Production Release)**:
+  - **Fingernail Bed Carving**: 0.70 mm deep anatomical nail plate recess on all distal tips (Index, Middle, Ring, Pinky, Thumb) with curved proximal cuticle arc (eponychium) and lateral folds.
+  - **One-Directional Articulation**: Rigid 0° mechanical extension hard stops with full unobstructed 0°→95° palmar flexion.
+  - **Continuous Dorsal Groove & Concealed Bridges**: 2.4 mm wide open groove for passive return elastic band, secured with 1.3 mm thick flush concealed bridges (zero external protrusion).
+  - **Generator**: [`generate_hand_stl_v7.py`](generate_hand_stl_v7.py)
+  - **Export Directory**: [`stl_exports_v7/`](stl_exports_v7/) (17 watertight solid manifold STLs)
+  - **Full Documentation**: See [V7_SPECIFICATION_REPORT.md](V7_SPECIFICATION_REPORT.md)
+
+---
+
+## 5. Repository Contents
+
+- `V7_SPECIFICATION_REPORT.md`: Comprehensive engineering report and verification metrics for Iteration 7.
+- `generate_hand_stl_v7.py`: Iteration 7 procedural CAD compilation script with fingernail bed and one-directional hard stop generation.
+- `stl_exports_v7/`: Production STL files for all 17 components of Iteration 7.
 - `index.html`: Interactive Three.js WebGL visualizer featuring live 27-DoF joint controls, modular micro-servo bank, Dyneema tendon routing, real-time palmar cupping, wrist articulation, and carbon matrix shaders.
 - `BIOMIMETIC_SPECIFICATION.md`: Complete technical specification and 20-channel servo-to-joint tendon mapping table.
 - `ENGINEERING_GUIDE.md`: Comprehensive fabrication, 3D printing parameters, tendon rigging, and servo calibration manual.
 - `robotic_hand.scad`: Parametric CAD source with tendon conduit fairleads, clevis hinge tolerances, and composite bone geometries.
-- `generate_hand_stl.py`: Procedural STL compilation script for 3D printing and mold machining.
 
 ---
 
-## 5. Quick Start & Visualizer
+## 6. Quick Start & Visualizer
 
 Launch the interactive 3D WebGL musculoskeletal simulator:
 ```bash
