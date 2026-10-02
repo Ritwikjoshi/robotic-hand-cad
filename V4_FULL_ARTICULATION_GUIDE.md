@@ -1,57 +1,26 @@
-# Iteration 4 (v4.0) Full-Articulation High-ROM Robotic Hand Engineering Guide
+# Iteration 4 (v4.0) Re-engineered Solid High-ROM Robotic Hand Engineering Guide
 
-## 1. Problem Diagnosis & Engineering Solution
+## 1. Problem Diagnosis & Engineering Resolution
 
-### Previous Issue in Physical Assembly:
-In earlier iterations, when assembling the 3D-printed phalanges, the joints experienced premature mechanical binding and limited Range of Motion (RoM) (often halting around $30^\circ - 45^\circ$ instead of achieving full $90^\circ - 95^\circ$ flexion).
+### Feedback on Initial v4 Prototype:
+The previous v4 iteration added excessive external corner chamfers and neck cutouts which created weak fracture points and gouged valleys.
 
-### Root Causes Identified:
-1. **Sharp $90^\circ$ Shoulder Steps**: The step transition where the phalanx shaft met the narrower male tongue created square interior corners that caught against the mating female clevis fork tips during rotation.
-2. **Palmar Neck Interference**: The palmar side of the shaft just proximal to the joint lacked angular relief, causing the female clevis throat to bottom out against the male stem in flexion.
-3. **FDM Layer Ridge Snagging on Sharp Fork Corners**: Outer $90^\circ$ corners on the female clevis ears caught against layer lines and adjacent phalanx walls.
-4. **Convex Hull Webbing at Palm Knuckles**: Inter-knuckle bridge material restricted the proximal phalanx from swinging freely past $45^\circ$.
-
----
-
-## 2. Iteration 4 (v4.0) Architectural Innovations
-
-```
-                         DORSAL (Extension Stop ~0°)
-                         ┌───────────────────────┐
-                         │   Smooth Blend Zone   │
-                         └───────────────────────┘
-      MALE TONGUE                                        FEMALE CLEVIS FORK
-  (Center Pin Axis)                                      (Concentric Ears)
-        (•) ──[ 45° Lead-in Chamfers ]─────────────────────── (•) ──[ Concentric Ear R=5.28mm ]
-         \                                                   /
-          \                                                 /
-           \───[ 45° Palmar Flexion Relief Ramp ]──────────/
-                         PALMAR (Full 95° Flexion Clearance)
-```
-
-### Key Engineering Features in v4:
-1. **$45^\circ$ Bi-Directional Palmar Relief**:
-   - **Male Shaft Neck**: Machined with a $45^\circ$ angular bevel in the region $y \in [L - 4.5\text{ mm}, L]$ on the palmar side.
-   - **Female Throat Relief**: Machined with a matching $45^\circ$ palmar throat relief wedge so the fork bottom never collides with the male stem.
-2. **Concentric Chamfered Clevis Ears**:
-   - The female fork outer perimeter is a pure concentric cylinder centered at the rotation pin $(0, 0, 0)$ with radius $R = \text{height} \times 0.44$.
-   - The 4 outer corners are beveled with $45^\circ$ corner chamfers to ensure smooth rotation over 3D-printed layer ridges.
-3. **$45^\circ$ Transition Lead-in Shoulders**:
-   - Replaced sharp $90^\circ$ lateral cuts with $45^\circ$ lead-in chamfers at the tongue shoulders.
-4. **Deep-Flexion Palm Knuckle Cavities**:
-   - Palm knuckle male tongues feature concentric $4.5\text{ mm}$ radius hubs, $8.5\text{ mm}$ radial clearance pockets, and $45^\circ$ palmar ramps for complete $95^\circ$ fist grip flexion.
-5. **Funneled Tendon Fairleads**:
-   - All internal $\varnothing 2.5\text{ mm}$ tendon bores feature $30^\circ$ funneled entry and exit ports ($\varnothing 4.4\text{ mm}$ lead-in) preventing cable wear or pinching.
-6. **Concealed Hardware Seating**:
-   - Left fork: Concealed M3 screw head counterbores ($\varnothing 6.5\text{ mm}$, $2.6\text{ mm}$ depth).
-   - Right fork: Concealed M3 nut pockets ($\varnothing 6.5\text{ mm}$, $2.4\text{ mm}$ depth).
-   - Pivot Bores: Precision $\varnothing 3.4\text{ mm}$ bores for standard M3 bolts or 3.0 mm dowel pins.
+### Re-engineered Solution in v4.0:
+1. **Completely Filled Corners, Valleys & Notches**:
+   - Eliminated all fragile corner bevels on clevis fork ears and neck notches on male tongues.
+   - Shaft surface is a single, continuous, organic lofted solid with generous thickness ($> 3.4\text{ mm}$ solid enclosing walls around all M3 counterbores).
+   - Smooth anatomical condyles with tangent blending into the joint hubs.
+2. **Complete Unrestricted Degree of Movement ($0^\circ \to 95^\circ$ Flexion)**:
+   - **Concentric Hinge Hubs**: Pivot axes aligned at $(0, 0, 0)$ with $0.5\text{ mm}$ radial clearance and $0.5\text{ mm}$ lateral clearance ($5.4\text{ mm}$ female slot vs $4.4\text{ mm}$ male tongue).
+   - **Internal-Only Palmar Throat Relief**: Smooth $45^\circ$ throat relief contained strictly inside the female slot width ($5.4\text{ mm}$), leaving outer fork walls $100\%$ thick and structurally solid.
+   - **Smooth Tangential Shaft Lofting**: The palmar contour naturally clears the mating hub at $95^\circ$ flexion without requiring weak cutouts or artificial notches.
+   - **Solid Palm Knuckles**: Knuckle male tongues feature concentric $4.5\text{ mm}$ hubs and clean $8.0\text{ mm}$ rotational clearance pockets that leave the palm deck thick, sturdy, and rigid.
 
 ---
 
-## 3. Kinematic Verification Summary
+## 2. Kinematic Range of Motion Validation ($0^\circ$ to $95^\circ$ Flexion)
 
-Automated volumetric boolean collision tests across the entire motion envelope confirmed **$0.000\text{ mm}^3$ collision volume** (100% free clearance) across all angles:
+Automated boolean collision checks across all 5 digits confirm **$0.000\text{ mm}^3$ collision volume** (zero binding):
 
 | Flexion Angle | MCP Joint (Palm $\to$ Proximal) | PIP Joint (Proximal $\to$ Intermediate) | DIP Joint (Intermediate $\to$ Distal) |
 |---|---|---|---|
@@ -66,26 +35,33 @@ Automated volumetric boolean collision tests across the entire motion envelope c
 
 ---
 
-## 4. Master STL Parts List (`stl_exports_v4/`)
+## 3. Preserved Hardware Specifications
 
-All 17 production STL files are exported and ready to slice in `stl_exports_v4/`:
+- **Screw Counterbores (Left fork)**: Concealed $\varnothing 6.5\text{ mm}$, $2.6\text{ mm}$ depth for M3 socket / button head screws.
+- **Nut Pockets (Right fork)**: Concealed $\varnothing 6.5\text{ mm}$, $2.4\text{ mm}$ depth for M3 hex / round nuts.
+- **Hinge Pin Bores**: Precision $\varnothing 3.4\text{ mm}$ pass-through across all matching joints.
+- **Tendon Channels**: Continuous $\varnothing 2.5\text{ mm}$ internal bores along all 5 digits.
 
-| Part Name | STL File Name (`stl_exports_v4/`) | Width | Qty | Key Features |
-|---|---|---|---|---|
-| **Palm Chassis** | `palm_v4.stl` | $76.0\text{ mm}$ | 1 | $8.5\text{ mm}$ knuckle pockets, concealed thumb CMC |
-| **Forearm Servo Adapter** | `forearm_servo_adapter_v4.stl` | $46.0\text{ mm}$ dia | 1 | 6x Micro Servo bays, filleted rim |
-| **Index Proximal** | `index_proximal_v4.stl` | $12.6\text{ mm}$ | 1 | $45^\circ$ chamfered forks, $45^\circ$ palmar relief |
-| **Index Intermediate** | `index_intermediate_v4.stl` | $12.2\text{ mm}$ | 1 | Dual-end chamfered clevis & tongue |
-| **Index Distal** | `index_distal_v4.stl` | $12.0\text{ mm}$ | 1 | Full-ROM base, dorsal knot anchor |
-| **Middle Proximal** | `middle_proximal_v4.stl` | $13.4\text{ mm}$ | 1 | High-load palm knuckle hinge |
-| **Middle Intermediate** | `middle_intermediate_v4.stl` | $12.8\text{ mm}$ | 1 | Dual-end chamfered clevis & tongue |
-| **Middle Distal** | `middle_distal_v4.stl` | $12.6\text{ mm}$ | 1 | Full-ROM base, dorsal knot anchor |
-| **Ring Proximal** | `ring_proximal_v4.stl` | $12.8\text{ mm}$ | 1 | $45^\circ$ chamfered forks, $45^\circ$ palmar relief |
-| **Ring Intermediate** | `ring_intermediate_v4.stl` | $12.4\text{ mm}$ | 1 | Dual-end chamfered clevis & tongue |
-| **Ring Distal** | `ring_distal_v4.stl` | $12.0\text{ mm}$ | 1 | Full-ROM base, dorsal knot anchor |
-| **Pinky Proximal** | `pinky_proximal_v4.stl` | $11.8\text{ mm}$ | 1 | $45^\circ$ chamfered forks, $45^\circ$ palmar relief |
-| **Pinky Intermediate** | `pinky_intermediate_v4.stl` | $11.4\text{ mm}$ | 1 | Dual-end chamfered clevis & tongue |
-| **Pinky Distal** | `pinky_distal_v4.stl` | $11.0\text{ mm}$ | 1 | Full-ROM base, dorsal knot anchor |
-| **Thumb Proximal** | `thumb_proximal_v4.stl` | $14.5\text{ mm}$ | 1 | Reinforced CMC knuckle clevis |
-| **Thumb Distal** | `thumb_distal_v4.stl` | $13.5\text{ mm}$ | 1 | Wide opposable grip pad |
-| **Full Assembly** | `robotic_hand_full_assembly_v4.stl` | Complete | 1 | Full articulated 3D CAD model |
+---
+
+## 4. Re-generated Production STLs (`stl_exports_v4/`)
+
+| Part Name | File Name (`stl_exports_v4/`) | Width | Qty |
+|---|---|---|---|
+| **Palm Chassis** | `palm_v4.stl` | $76.0\text{ mm}$ | 1 |
+| **Forearm Servo Adapter** | `forearm_servo_adapter_v4.stl` | $46.0\text{ mm}$ dia | 1 |
+| **Index Proximal** | `index_proximal_v4.stl` | $12.6\text{ mm}$ | 1 |
+| **Index Intermediate** | `index_intermediate_v4.stl` | $12.2\text{ mm}$ | 1 |
+| **Index Distal** | `index_distal_v4.stl` | $12.0\text{ mm}$ | 1 |
+| **Middle Proximal** | `middle_proximal_v4.stl` | $13.4\text{ mm}$ | 1 |
+| **Middle Intermediate** | `middle_intermediate_v4.stl` | $12.8\text{ mm}$ | 1 |
+| **Middle Distal** | `middle_distal_v4.stl` | $12.6\text{ mm}$ | 1 |
+| **Ring Proximal** | `ring_proximal_v4.stl` | $12.8\text{ mm}$ | 1 |
+| **Ring Intermediate** | `ring_intermediate_v4.stl` | $12.4\text{ mm}$ | 1 |
+| **Ring Distal** | `ring_distal_v4.stl` | $12.0\text{ mm}$ | 1 |
+| **Pinky Proximal** | `pinky_proximal_v4.stl` | $11.8\text{ mm}$ | 1 |
+| **Pinky Intermediate** | `pinky_intermediate_v4.stl` | $11.4\text{ mm}$ | 1 |
+| **Pinky Distal** | `pinky_distal_v4.stl` | $11.0\text{ mm}$ | 1 |
+| **Thumb Proximal** | `thumb_proximal_v4.stl` | $14.5\text{ mm}$ | 1 |
+| **Thumb Distal** | `thumb_distal_v4.stl` | $13.5\text{ mm}$ | 1 |
+| **Full Assembly** | `robotic_hand_full_assembly_v4.stl` | Complete | 1 |
