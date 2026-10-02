@@ -195,7 +195,7 @@ def create_v6_clevis_cutters(width, height, is_distal=False):
     slot_cyl.apply_translation([0, 0.8, 0])
 
     # 2. One-directional slot box
-    z_roof = r_slot + (0.48 if is_distal else 0.53)  # Extension hard stop ceiling
+    z_roof = r_slot + (0.45 if is_distal else 0.50)  # Extension hard stop ceiling
     z_floor_palmar = -height * 0.90                  # Wide palmar flexion clearance
     box_h = z_roof - z_floor_palmar
     box_zc = (z_roof + z_floor_palmar) / 2.0
@@ -279,15 +279,15 @@ def make_ramp_cutter(width, y0, y1, z0, z1, z_top=15.0):
 
 def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridge_len=3.2, is_distal=False, anchor_y_frac=0.78):
     """
-    Creates cutters for the concealed dorsal rubber band routing:
-    - Starts strictly in front of female clevis root (y_start = 0.8 + r_slot + 1.2mm)
-      with a smooth 45° lead-in ramp, preventing break-through into clevis slot or M3 counterbores.
-    - Flat groove segment at z_floor before bridge (+Z open to the air).
-    - A tunnel cutter (inner_h = 1.6mm) passing under the flush bridge at depth z_floor.
-    - Flat groove segment after bridge.
-    - On intermediate and proximal: stops before the male tongue hub with a smooth 45° exit ramp.
-    - On distal: extends directly to meet the transverse retention bore.
-    - Leaves intact, solid bridge (RB_BRIDGE_ROOF = 1.3mm) perfectly flush with natural dorsal skin.
+    Creates cutters for the continuous concealed dorsal rubber band routing:
+    - Seamless, unblocked open-from-above groove from the clevis joint through the bridge to the distal end.
+    - At the female clevis root (y_joint_entry = 3.2mm), the groove begins seamlessly where the mating
+      male tongue (4.2mm hub) enters, ensuring a 1.0mm overlap with zero gap and zero blockage.
+    - Calibrated depth (z_entry_floor) prevents cutting into the concentric slot cylinder or M3 counterbore walls,
+      ensuring thick, solid, fracture-resistant fork roots with zero breakthrough windows or thin arches.
+    - Smooth transition ramp descends to the concealed tunnel floor under the flush bridge (1.3mm roof).
+    - Distal groove continues across the male tongue (y = length + 6.0mm) so the rubber band can travel
+      continuously across all phalangeal joints without obstruction.
     """
     groove_w = RB_GROOVE_W
     inner_h = RB_INNER_H
@@ -296,67 +296,64 @@ def make_dorsal_concealed_groove_cutters(length, height, loop_y_frac=0.50, bridg
 
     z_surf = height * (0.44 if is_distal else 0.446)
     z_tunnel_top = z_surf - bridge_roof
-    z_floor = z_tunnel_top - inner_h
-    depth = z_surf - z_floor
+    z_tunnel_floor = z_tunnel_top - inner_h
+    z_entry_floor = z_surf - 0.85
 
     cutters = []
 
-    # Female clevis root clearance:
-    # Concentric slot cylinder center is y=0.8, radius r_slot.
-    # We enforce y_start at least 1.2mm beyond the cylinder distal extent.
-    r_slot = height * HUB_R_FRAC + 0.15
-    y_start = 0.8 + r_slot + 1.2
-
-    # Distal boundary:
-    if is_distal:
-        y_end = length * anchor_y_frac + 2.0
-    else:
-        hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
-        y_end = length - hub_r - 0.8
-
+    # Female clevis entry: starts at y = 3.2 mm (overlapping the mating male tongue's 4.2mm hub by 1.0mm)
+    # This guarantees the rubber band groove is 100% continuous and never blocked across the joint!
+    y_joint_entry = 3.2
     y_bridge_start = loop_y - bridge_len / 2
     y_bridge_end = loop_y + bridge_len / 2
 
-    # 1. 45-degree smooth lead-in ramp at y_start
-    ramp_len = min(depth, (y_bridge_start - y_start) * 0.45)
-    ramp_in = make_ramp_cutter(groove_w, y_start, y_start + ramp_len, z_surf, z_floor)
-    cutters.append(ramp_in)
+    # 1. Seamless entry ramp from y_joint_entry to y_trans (descending from z_entry_floor to z_tunnel_floor)
+    y_trans = min(6.0, y_bridge_start - 1.0)
+    ramp_entry = make_ramp_cutter(groove_w, y_joint_entry, y_trans, z_entry_floor, z_tunnel_floor)
+    cutters.append(ramp_entry)
 
-    # 2. Segment 1: Open groove between lead-in ramp and bridge
-    y1_start = y_start + ramp_len
-    if y_bridge_start > y1_start:
-        y1_len = y_bridge_start - y1_start
-        y1_c = (y1_start + y_bridge_start) / 2
-        cut1 = box(extents=[groove_w, y1_len + 0.1, 12.0])
-        cut1.apply_translation([0, y1_c, z_floor + 6.0])
+    # 2. Open groove from y_trans to bridge
+    if y_bridge_start > y_trans:
+        cut1 = box(extents=[groove_w, y_bridge_start - y_trans + 0.1, 12.0])
+        cut1.apply_translation([0, (y_trans + y_bridge_start) / 2, z_tunnel_floor + 6.0])
         cutters.append(cut1)
 
     # 3. Concealed tunnel under flush bridge
     tunnel = box(extents=[groove_w, bridge_len + 0.2, inner_h])
-    tunnel.apply_translation([0, loop_y, z_floor + inner_h / 2])
+    tunnel.apply_translation([0, loop_y, z_tunnel_floor + inner_h / 2])
     cutters.append(tunnel)
 
-    # 4. Segment 2: Open groove after bridge + lead-out ramp
+    # 4. Distal open groove
     if is_distal:
+        y_end = length * anchor_y_frac + 2.0
         y2_len = y_end - y_bridge_end
         y2_c = (y_bridge_end + y_end) / 2
         cut2 = box(extents=[groove_w, y2_len, 12.0])
-        cut2.apply_translation([0, y2_c, z_floor + 6.0])
+        cut2.apply_translation([0, y2_c, z_tunnel_floor + 6.0])
         cutters.append(cut2)
     else:
-        ramp_out_len = min(depth, (y_end - y_bridge_end) * 0.45)
-        y2_end = y_end - ramp_out_len
-        if y2_end > y_bridge_end:
-            y2_len = y2_end - y_bridge_end
-            y2_c = (y_bridge_end + y2_end) / 2
+        # Runs through the male tongue all the way to length + 6.0 mm so it is never blocked
+        y_end = length + 6.0
+        y_ramp_dist = length - 4.5
+        if y_ramp_dist > y_bridge_end:
+            y2_len = y_ramp_dist - y_bridge_end
+            y2_c = (y_bridge_end + y_ramp_dist) / 2
             cut2 = box(extents=[groove_w, y2_len + 0.1, 12.0])
-            cut2.apply_translation([0, y2_c, z_floor + 6.0])
+            cut2.apply_translation([0, y2_c, z_tunnel_floor + 6.0])
             cutters.append(cut2)
 
-        ramp_out = make_ramp_cutter(groove_w, y_end - ramp_out_len, y_end, z_floor, z_surf)
-        cutters.append(ramp_out)
+            ramp_out = make_ramp_cutter(groove_w, y_ramp_dist, length - 1.0, z_tunnel_floor, z_entry_floor)
+            cutters.append(ramp_out)
 
-    return cutters, z_floor
+            cut_tongue = box(extents=[groove_w, y_end - (length - 1.0) + 0.1, 12.0])
+            cut_tongue.apply_translation([0, ((length - 1.0) + y_end) / 2, z_entry_floor + 6.0])
+            cutters.append(cut_tongue)
+        else:
+            cut2 = box(extents=[groove_w, y_end - y_bridge_end, 12.0])
+            cut2.apply_translation([0, (y_bridge_end + y_end) / 2, z_tunnel_floor + 6.0])
+            cutters.append(cut2)
+
+    return cutters, z_tunnel_floor
 
 
 def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
