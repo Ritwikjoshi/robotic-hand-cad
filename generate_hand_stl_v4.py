@@ -254,16 +254,26 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     cutters = []
     cutters.extend(create_female_clevis_cutters(width, height, is_distal=True))
 
-    # Continuous tendon bore
+    bore_z = -height * 0.16   # tendon bore centre Z
+
+    # Continuous tendon bore – runs the full length +overcut so no cap remains
     tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     tendon_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
-    tendon_bore.apply_translation([0, length / 2, -height * 0.16])
+    tendon_bore.apply_translation([0, length / 2, bore_z])
     cutters.append(tendon_bore)
 
-    # Dorsal knot anchor chamber
-    anchor_pocket = box(extents=[4.5, 5.0, height * 0.48])
-    anchor_pocket.apply_translation([0, length * 0.65, 0.6])
+    # Dorsal knot anchor chamber – centred so its floor is BELOW the bore top wall,
+    # guaranteeing a clear opening between the chamber and the bore (no web / bridge).
+    anchor_pocket_h = height * 0.55                      # tall enough to reach bore
+    anchor_pocket_z = bore_z + TENDON_RADIUS + anchor_pocket_h / 2 - 0.3  # slight overlap
+    anchor_pocket = box(extents=[4.5, 5.0, anchor_pocket_h])
+    anchor_pocket.apply_translation([0, length * 0.65, anchor_pocket_z])
     cutters.append(anchor_pocket)
+
+    # Vertical connector slot: bridges anchor pocket → bore with zero leftover web
+    connector = box(extents=[TENDON_RADIUS * 2 + 0.4, 5.0, TENDON_RADIUS * 2 + 0.4])
+    connector.apply_translation([0, length * 0.65, bore_z])
+    cutters.append(connector)
 
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
