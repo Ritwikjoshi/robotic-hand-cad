@@ -54,9 +54,11 @@ NUT_R = 3.25             # 6.5 mm diameter counterbore for M3 nut
 NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
 
 # v5 Dorsal rubber band routing dimensions
-RB_GROOVE_W = 3.5        # Groove width  (mm) — fits standard rubber bands
-RB_GROOVE_D = 2.0        # Groove depth  (mm) — holds band, stays below dorsal skin
-RB_ANCHOR_W = 5.0        # Anchor slot width  (mm)
+# Standard rubber band: ~1.5mm wide, ~0.5mm thick.
+# Groove is a shallow guide seat — just enough to locate the band, not weaken the arch.
+RB_GROOVE_W = 2.0        # Groove width  (mm) — snug fit around rubber band
+RB_GROOVE_D = 0.8        # Groove depth  (mm) — seats the band, preserves dorsal wall
+RB_ANCHOR_W = 3.0        # Anchor slot width  (mm)
 RB_ANCHOR_L = 4.0        # Anchor slot length (mm) — rubber band end knotted here
 RB_ANCHOR_D = 3.0        # Anchor slot depth  (mm)
 
@@ -616,8 +618,8 @@ def build_iteration_5():
     print("BUILDING ITERATION 5 (v5.0 - DUAL-ACTUATION: PALMAR SERVO + DORSAL RUBBER BAND)")
     print("  Anterior (palmar): Servo wire through Ø2.5mm bore  → ACTIVE FLEXION 0°→95°")
     print("  Posterior (dorsal): Rubber band in carved groove/slot → PASSIVE EXTENSION")
-    print("  Groove spec        : 3.5mm wide × 2.0mm deep on dorsal surface of each segment")
-    print("  Anchor slot spec   : 5×4×3mm recess on distal tip + palm surface per finger")
+    print("  Groove spec        : 2.0mm wide × 0.8mm deep — shallow guide seat, full dorsal wall preserved")
+    print("  Anchor spec        : 3×4×3mm slot (distal tip) + 3×4×2.5mm (palm) — rubber band knotted in")
     print("  Pin Hole Diameter  : 3.4 mm (Smooth clearance for M3 bolts)")
     print("  Output Directory   : " + STL_DIR_V5)
     print("=" * 75)
