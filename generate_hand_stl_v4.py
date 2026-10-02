@@ -154,12 +154,11 @@ def generate_organic_body_v4(length, width, height, hub_r_dist):
 
 def create_female_clevis_cutters(width, height, is_distal=False):
     """
-    Creates high-strength female clevis cutters:
-    - Concentric circular pocket centered at (0, 0.8, 0)
-    - Internal-only 45° palmar throat relief that preserves 100% of outer fork wall thickness
-    - Concentric hinge pin hole (Ø3.4 mm)
-    - Concealed M3 screw head counterbore (left) & nut pocket (right) enclosed by solid thick walls
-    - Zero corner chamfers: outer walls are 100% thick, solid, and durable
+    Creates female clevis cutters.
+    For distal phalanges (is_distal=True): only the joint slot cylinder, the backward
+    extension box, and the hinge pin hole are cut — no palmar relief wedge and no M3
+    counterbores, so the interior stays completely solid except the joint opening.
+    For proximal/intermediate: full set including palmar throat relief and counterbores.
     """
     cutters = []
     r_slot = height * HUB_R_FRAC + 0.15
@@ -172,29 +171,32 @@ def create_female_clevis_cutters(width, height, is_distal=False):
     slot_box = box(extents=[CLEVIS_SLOT_W, 9.0, height * 1.3])
     slot_box.apply_translation([0, -2.5, 0])
 
-    # 2. Internal slot palmar throat relief (contained strictly within CLEVIS_SLOT_W)
-    palmar_relief = box(extents=[CLEVIS_SLOT_W, 7.5, 7.5])
-    palmar_relief.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/4, [1, 0, 0]))
-    palmar_relief.apply_translation([0, 2.0, -height * 0.42])
+    if is_distal:
+        # Distal tip: keep interior fully solid — only the joint slot opening + pin hole
+        cutters.append(trimesh.boolean.union([slot_cyl, slot_box]))
+    else:
+        # 2. Internal slot palmar throat relief (proximal/intermediate only)
+        palmar_relief = box(extents=[CLEVIS_SLOT_W, 7.5, 7.5])
+        palmar_relief.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/4, [1, 0, 0]))
+        palmar_relief.apply_translation([0, 2.0, -height * 0.42])
+        cutters.append(trimesh.boolean.union([slot_cyl, slot_box, palmar_relief]))
 
-    cutters.append(trimesh.boolean.union([slot_cyl, slot_box, palmar_relief]))
+        # 4. Concealed M3 screw head counterbore (left fork wall)
+        cb_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=36)
+        cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+        cb_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
+        cutters.append(cb_head)
 
-    # 3. Concentric hinge pin hole
+        # 5. Concealed M3 nut pocket (right fork wall)
+        cb_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=36)
+        cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+        cb_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
+        cutters.append(cb_nut)
+
+    # 3. Concentric hinge pin hole (always present)
     pin_cutter = cylinder(radius=PIN_RADIUS, height=width + 6.0, sections=36)
     pin_cutter.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     cutters.append(pin_cutter)
-
-    # 4. Concealed M3 screw head counterbore (left fork wall) with thick solid walls
-    cb_head = cylinder(radius=SCREW_HEAD_R, height=SCREW_HEAD_DEPTH + 2.0, sections=36)
-    cb_head.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    cb_head.apply_translation([-width/2 + (SCREW_HEAD_DEPTH - 2.0)/2, 0, 0])
-    cutters.append(cb_head)
-
-    # 5. Concealed M3 nut pocket (right fork wall) with thick solid walls
-    cb_nut = cylinder(radius=NUT_R, height=NUT_DEPTH + 2.0, sections=36)
-    cb_nut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    cb_nut.apply_translation([width/2 - (NUT_DEPTH - 2.0)/2, 0, 0])
-    cutters.append(cb_nut)
 
     return cutters
 
@@ -227,13 +229,11 @@ def create_male_tongue_cutters(length, width, height):
 
 def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     """
-    Fingertip phalanx with smooth, filled, high-strength anatomical contour:
-    - Smooth rounded base condyles with full wall thickness around hardware seats
-    - Ergonomic palmar pulp (finger pad) and dorsal nail curvature
-    - Rounded fingertip apex dome
-    - Full-ROM female clevis socket with internal palmar throat relief
-    - Concealed M3 screw head counterbore (left) & nut pocket (right)
-    - Continuous Ø2.5 mm tendon bore with compact dorsal knot chamber
+    Fingertip phalanx — completely solid interior with ONE channel:
+    - Smooth rounded anatomical body (convex hull of base condyles + pulp + dorsal + apex)
+    - Female clevis joint socket at base (slot + pin hole only, no palmar wedge)
+    - Single Ø2.5 mm tendon/wire bore running the full length
+    - NO anchor pocket, NO counterbores, NO internal cavities
     """
     base = make_base_condyles_v4(width, height)
 
@@ -252,28 +252,15 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     smooth_body = trimesh.boolean.union([base, pulp, dorsal, apex]).convex_hull
 
     cutters = []
+    # Joint socket at base (no palmar relief, no counterbores — solid interior)
     cutters.extend(create_female_clevis_cutters(width, height, is_distal=True))
 
-    bore_z = -height * 0.16   # tendon bore centre Z
-
-    # Continuous tendon bore – runs the full length +overcut so no cap remains
+    # Tendon wire bore — the ONLY interior channel
+    bore_z = -height * 0.16
     tendon_bore = cylinder(radius=TENDON_RADIUS, height=length + 20.0, sections=24)
     tendon_bore.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
     tendon_bore.apply_translation([0, length / 2, bore_z])
     cutters.append(tendon_bore)
-
-    # Dorsal knot anchor chamber – centred so its floor is BELOW the bore top wall,
-    # guaranteeing a clear opening between the chamber and the bore (no web / bridge).
-    anchor_pocket_h = height * 0.55                      # tall enough to reach bore
-    anchor_pocket_z = bore_z + TENDON_RADIUS + anchor_pocket_h / 2 - 0.3  # slight overlap
-    anchor_pocket = box(extents=[4.5, 5.0, anchor_pocket_h])
-    anchor_pocket.apply_translation([0, length * 0.65, anchor_pocket_z])
-    cutters.append(anchor_pocket)
-
-    # Vertical connector slot: bridges anchor pocket → bore with zero leftover web
-    connector = box(extents=[TENDON_RADIUS * 2 + 0.4, 5.0, TENDON_RADIUS * 2 + 0.4])
-    connector.apply_translation([0, length * 0.65, bore_z])
-    cutters.append(connector)
 
     return smooth_body.difference(trimesh.boolean.union(cutters))
 
