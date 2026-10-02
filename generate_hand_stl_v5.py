@@ -54,10 +54,14 @@ NUT_R = 3.25             # 6.5 mm diameter counterbore for M3 nut
 NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
 
 # v5 Dorsal rubber band routing dimensions
-# Standard rubber band: ~1.5mm wide, ~0.5mm thick.
-# Groove is a shallow guide seat — just enough to locate the band, not weaken the arch.
-RB_GROOVE_W = 2.0        # Groove width  (mm) — snug fit around rubber band
-RB_GROOVE_D = 0.8        # Groove depth  (mm) — seats the band, preserves dorsal wall
+# Standard rubber band: ~1.5mm - 2.0mm wide, ~0.5mm - 1.0mm thick.
+# The groove is open from above (U-channel) to eliminate weak/thin roof ceilings.
+# Retaining arch loops bridge over the groove to keep the rubber band securely in place.
+RB_GROOVE_W = 2.4        # Groove width  (mm) — allows free travel of rubber band
+RB_GROOVE_D = 1.1        # Groove depth  (mm) into dorsal surface
+RB_LOOP_W = 5.8          # Outer width   (mm) of retaining loop bridge
+RB_LOOP_ROOF = 1.3       # Solid structural roof thickness (mm) of loop arch
+RB_INNER_H = 1.8         # Internal clearance height (mm) under loop arch
 RB_ANCHOR_W = 3.0        # Anchor slot width  (mm)
 RB_ANCHOR_L = 4.0        # Anchor slot length (mm) — rubber band end knotted here
 RB_ANCHOR_D = 3.0        # Anchor slot depth  (mm)
@@ -242,13 +246,70 @@ def create_male_tongue_cutters(length, width, height):
     return cutters
 
 
+def make_dorsal_loop_and_groove_cutters(length, height, loop_y_frac=0.50, loop_len=3.4, is_distal=False, anchor_y_frac=0.78):
+    """
+    Creates:
+    1) loop_solid: Raised organic arch bridge to be unioned onto the dorsal surface of the phalanx body.
+    2) cutters: Open-from-above groove cutters (+Z open to the air) + tunnel cutter under the loop arch.
+    
+    The groove is completely open from above across the phalanx length, eliminating fragile/collapsing ceilings.
+    The retaining loop provides a solid 1.3mm thick bridge over the rubber band to keep it captive in the groove.
+    """
+    groove_w = RB_GROOVE_W
+    groove_d = RB_GROOVE_D
+    loop_y = length * loop_y_frac
+    loop_w = RB_LOOP_W
+    loop_roof = RB_LOOP_ROOF
+    inner_h = RB_INNER_H
+
+    z_surf = height * (0.44 if is_distal else 0.446)
+    z_floor = z_surf - groove_d
+
+    # 1. Raised retaining loop bridge
+    bridge_h = inner_h + loop_roof
+    r_arch = loop_w / 2.0
+    arch_cyl = cylinder(radius=r_arch, height=loop_len, sections=24)
+    arch_cyl.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+    arch_cyl.apply_translation([0, loop_y, z_floor + bridge_h - r_arch])
+
+    arch_box = box(extents=[loop_w, loop_len, bridge_h])
+    arch_box.apply_translation([0, loop_y, z_floor + bridge_h / 2])
+    loop_solid = trimesh.boolean.union([arch_cyl, arch_box]).convex_hull
+
+    # 2. Cutters
+    cutters = []
+
+    # Open-from-above groove segment 1 (base to loop)
+    y1_len = (loop_y - loop_len / 2) + 10.0
+    y1_c = (loop_y - loop_len / 2 - 10.0) / 2
+    cut1 = box(extents=[groove_w, y1_len, 12.0])
+    cut1.apply_translation([0, y1_c, z_floor + 6.0])
+    cutters.append(cut1)
+
+    # Open-from-above groove segment 2 (loop to distal end or anchor)
+    end_y = (length * anchor_y_frac + 2.0) if is_distal else (length + 10.0)
+    y2_len = end_y - (loop_y + loop_len / 2)
+    y2_c = (loop_y + loop_len / 2 + end_y) / 2
+    cut2 = box(extents=[groove_w, y2_len, 12.0])
+    cut2.apply_translation([0, y2_c, z_floor + 6.0])
+    cutters.append(cut2)
+
+    # Tunnel under loop
+    tunnel = box(extents=[groove_w, loop_len + 2.0, inner_h])
+    tunnel.apply_translation([0, loop_y, z_floor + inner_h / 2])
+    cutters.append(tunnel)
+
+    return loop_solid, cutters, z_floor
+
+
 def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     """
     v5 Fingertip phalanx:
     - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
-    - DORSAL full-length groove     : rubber band runs along here      [posterior]
-    - TRANSVERSE retention bore at 80% length: rubber band threads
-      through this Ø2.0mm bore, is knotted on the far side to lock it.
+    - DORSAL open groove + retaining loop: rubber band runs in open groove,
+      held captive by a raised arch loop at 42% length.
+    - TRANSVERSE retention bore at 78% length: rubber band threads through
+      and is knotted on the outside to lock it.
     """
     base = make_base_condyles_v4(width, height)
 
@@ -266,6 +327,12 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
 
     smooth_body = trimesh.boolean.union([base, pulp, dorsal, apex]).convex_hull
 
+    # Create dorsal loop and open-groove cutters
+    loop_solid, rb_cutters, z_floor = make_dorsal_loop_and_groove_cutters(
+        length, height, loop_y_frac=0.42, loop_len=3.0, is_distal=True, anchor_y_frac=0.78
+    )
+    augmented_body = trimesh.boolean.union([smooth_body, loop_solid])
+
     cutters = []
     cutters.extend(create_female_clevis_cutters(width, height, is_distal=True))
 
@@ -276,36 +343,32 @@ def generate_distal_phalanx(length=24.0, width=12.0, height=11.2):
     tendon_bore.apply_translation([0, length / 2, bore_z])
     cutters.append(tendon_bore)
 
-    # --- POSTERIOR: full-length dorsal groove ---
-    # Runs the entire length of the phalanx (length+20 ensures it exits both faces).
-    # Skin peak z ≈ height*0.44; groove centre at (height*0.44 - RB_GROOVE_D/2)
-    # so the groove cuts exactly RB_GROOVE_D deep into the dorsal surface.
-    groove_z = height * 0.44 - RB_GROOVE_D / 2
-    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
-    rb_groove.apply_translation([0, length / 2, groove_z])
-    cutters.append(rb_groove)
+    # --- POSTERIOR: open groove + loop cutters ---
+    cutters.extend(rb_cutters)
 
-    # --- POSTERIOR: transverse rubber band retention bore at 80% length ---
-    # A Ø2.0mm hole crossing through the part perpendicular to the groove.
-    # Thread the rubber band end through, pull tight, tie a knot on the inside.
+    # --- POSTERIOR: transverse rubber band retention bore at 78% length ---
     rb_retention = cylinder(radius=1.0, height=width + 4.0, sections=20)
     rb_retention.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    rb_retention.apply_translation([0, length * 0.80, groove_z])
+    rb_retention.apply_translation([0, length * 0.78, z_floor + 0.8])
     cutters.append(rb_retention)
 
-    return smooth_body.difference(trimesh.boolean.union(cutters))
+    return augmented_body.difference(trimesh.boolean.union(cutters))
 
 
 def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     """
     v5 Intermediate phalanx:
     - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
-    - DORSAL full-length groove     : rubber band routing channel      [posterior]
-      Groove (RB_GROOVE_W wide × RB_GROOVE_D deep) runs the entire segment length,
-      exiting both end-faces so it is continuous with adjacent segments.
+    - DORSAL open groove + retaining loop: open-from-above groove with a raised
+      arch loop at 50% length keeping the rubber band in place.
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
+
+    loop_solid, rb_cutters, z_floor = make_dorsal_loop_and_groove_cutters(
+        length, height, loop_y_frac=0.50, loop_len=3.2, is_distal=False
+    )
+    augmented_body = trimesh.boolean.union([body, loop_solid])
 
     cutters = []
     cutters.extend(create_female_clevis_cutters(width, height))
@@ -317,27 +380,26 @@ def generate_intermediate_phalanx(length=25.5, width=12.2, height=11.6):
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
 
-    # --- POSTERIOR: full-length dorsal groove ---
-    # length+20 guarantees the groove exits both end-faces of the segment,
-    # so across the assembled finger it forms one unbroken channel.
-    groove_z = height * 0.44 - RB_GROOVE_D / 2
-    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
-    rb_groove.apply_translation([0, length / 2, groove_z])
-    cutters.append(rb_groove)
+    # --- POSTERIOR: open groove + loop cutters ---
+    cutters.extend(rb_cutters)
 
-    return body.difference(trimesh.boolean.union(cutters))
+    return augmented_body.difference(trimesh.boolean.union(cutters))
 
 
 def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     """
     v5 Proximal phalanx:
     - PALMAR bore (z = -height*0.16): servo wire for active flexion   [anterior]
-    - DORSAL full-length groove     : rubber band routing channel      [posterior]
-      Groove (RB_GROOVE_W wide × RB_GROOVE_D deep) runs the entire segment length,
-      exiting both end-faces so it is continuous with adjacent segments.
+    - DORSAL open groove + retaining loop: open-from-above groove with a raised
+      arch loop at 50% length keeping the rubber band in place.
     """
     hub_r = height * HUB_R_FRAC - FDM_CLEARANCE
     body = generate_organic_body_v4(length, width, height, hub_r)
+
+    loop_solid, rb_cutters, z_floor = make_dorsal_loop_and_groove_cutters(
+        length, height, loop_y_frac=0.50, loop_len=3.6, is_distal=False
+    )
+    augmented_body = trimesh.boolean.union([body, loop_solid])
 
     cutters = []
     cutters.extend(create_female_clevis_cutters(width, height))
@@ -349,13 +411,10 @@ def generate_proximal_phalanx(length=34.0, width=12.6, height=12.0):
     t_flex.apply_translation([0, length / 2, -height * 0.16])
     cutters.append(t_flex)
 
-    # --- POSTERIOR: full-length dorsal groove ---
-    groove_z = height * 0.44 - RB_GROOVE_D / 2
-    rb_groove = box(extents=[RB_GROOVE_W, length + 20.0, RB_GROOVE_D])
-    rb_groove.apply_translation([0, length / 2, groove_z])
-    cutters.append(rb_groove)
+    # --- POSTERIOR: open groove + loop cutters ---
+    cutters.extend(rb_cutters)
 
-    return body.difference(trimesh.boolean.union(cutters))
+    return augmented_body.difference(trimesh.boolean.union(cutters))
 
 
 def generate_forearm_adapter(adapter_length=65.0, outer_radius=23.0):
@@ -617,9 +676,10 @@ def build_iteration_5():
     print("=" * 75)
     print("BUILDING ITERATION 5 (v5.0 - DUAL-ACTUATION: PALMAR SERVO + DORSAL RUBBER BAND)")
     print("  Anterior (palmar): Servo wire through Ø2.5mm bore  → ACTIVE FLEXION 0°→95°")
-    print("  Posterior (dorsal): Rubber band in carved groove/slot → PASSIVE EXTENSION")
-    print("  Groove spec        : 2.0mm wide × 0.8mm deep — shallow guide seat, full dorsal wall preserved")
-    print("  Anchor spec        : 3×4×3mm slot (distal tip) + 3×4×2.5mm (palm) — rubber band knotted in")
+    print("  Posterior (dorsal): Rubber band in open top groove with retaining loops → PASSIVE EXTENSION")
+    print("  Groove spec        : 2.4mm wide × 1.1mm deep — completely open from above, zero fragile ceiling")
+    print("  Retaining loops    : 5.8mm wide × 1.3mm thick arched bridges keep band captive in groove")
+    print("  Anchor spec        : Ø2.0mm transverse bore (distal tip) + 3×4×2.5mm slot (palm)")
     print("  Pin Hole Diameter  : 3.4 mm (Smooth clearance for M3 bolts)")
     print("  Output Directory   : " + STL_DIR_V5)
     print("=" * 75)
