@@ -3,19 +3,20 @@
 High-Precision 3D Printable Anthropomorphic Robotic Hand (Iteration 8 - v8.0)
 =============================================================================
 NEW ARCHITECTURAL ENHANCEMENTS IN ITERATION 8 (v8.0):
-1. REMOVED RUBBER BAND RETAINING LOOPS / BRIDGES (CONTINUOUS OPEN DORSAL GROOVE):
-   - Completely eliminated the retaining bridge/loop structures along the dorsal
+1. SNAP-FIT PINCH-LIP DORSAL RETENTION MECHANISM (NO LOOPS / BRIDGES):
+   - Completely eliminated closed retaining bridge/loop structures along the dorsal
      mid-shaft of all phalanges (Proximal, Intermediate, Distal).
-   - Replaced with a smooth, continuous, 100% open-from-above (U-channel) guide
-     groove running uninterrupted from the proximal clevis root to the distal tip.
-   - Eliminates internal bridge droop, support removal hassle, and delicate needle
-     threading during assembly. The rubber band simply drops/seats directly from above.
-   - Calibrated floor depth:
-     * Joint transition zones (clevis root and male tongue): z_joint_floor = z_surf - 0.85mm
-       guaranteeing ~1.0mm solid structural ceiling over the hinge slot cylinder.
-     * Shaft mid-body: z_groove_floor = z_surf - 2.80mm creating a deep, stable channel
-       that keeps the tensioned elastic band centered and seated during 0°–95° articulation.
-     * Smooth, monotonic ramp transitions between joint zones and shaft channel.
+   - Replaced with an integrated snap-fit pinch-lip undercut channel:
+     * Open top mouth slit: w_mouth = 1.8 mm (narrowed entry).
+     * Inward-facing retaining lips: 0.45 mm thick solid lips with 45° self-supporting chamfers.
+     * Internal captive cavity: w_cavity = 2.6 mm wide x 1.8 mm high spacious chamber.
+   - Mechanism of operation:
+     * The flexible rubber band (~1.5-2.0mm wide) is placed over the groove from above.
+     * Pressing down with a thumb or flat tool elastically squeezes the band past the 1.8mm slit.
+     * Inside the 2.6mm cavity, the band expands back to its relaxed shape and snaps captive.
+     * The inward overhang lips mechanically lock the band against upward popping during 0°–95° articulation.
+   - 100% self-supporting FDM printability: The 45° chamfer overhang prints cleanly without any supports.
+   - Zero needle-threading, zero internal bridge droop, zero fragile loose parts.
 
 2. PRESERVED ANATOMICAL FINGERNAIL BED CARVING (SHALLOW NAIL RECESS):
    - Shallow (0.70 mm deep) anatomical nail-shaped carving on the dorsal surface
@@ -36,7 +37,7 @@ NEW ARCHITECTURAL ENHANCEMENTS IN ITERATION 8 (v8.0):
 4. DUAL ANTAGONIST ACTUATION:
    - Palmar (anterior) channel: Continuous Ø2.5mm internal cable bore for active
      servo tendon wire pulling the fingers into flexion.
-   - Dorsal (posterior) channel: Open-from-above 2.4mm wide guide groove for rubber
+   - Dorsal (posterior) channel: Snap-fit pinch-lip guide channel for rubber
      band passive return extension.
    - Distal tip features a transverse retention bore (Ø2.0mm) for knotting the rubber band.
    - Palm knuckle anchors provide dedicated retention slots (3×4×2.5mm) for the proximal end.
@@ -91,11 +92,17 @@ SCREW_HEAD_DEPTH = 2.6   # 2.6 mm deep (fully conceals M3 socket / button head)
 NUT_R = 3.25             # 6.5 mm diameter counterbore for M3 nut
 NUT_DEPTH = 2.4          # 2.4 mm deep (fully conceals M3 nut)
 
-# v8 Dorsal rubber band routing dimensions (Loop-Free, Open U-Channel)
+# v8 Dorsal rubber band routing dimensions (Snap-Fit Pinch-Lip Undercut Channel)
 # Standard rubber band: ~1.5mm - 2.0mm wide, ~0.5mm - 1.0mm thick.
-# The groove is 100% open from above along the entire phalanx length.
-RB_GROOVE_W = 2.4        # Groove width (mm) — allows free travel of rubber band
+# The channel features an open-top mouth slit (1.8mm) with inward-facing retaining lips
+# that expand at 45° self-supporting chamfers into a spacious 2.6mm wide internal cavity.
+# Placing the band: Simply press the flexible band downward through the 1.8mm slit.
+# Once inside, it snaps captive within the 2.6mm chamber, locked against upward popping.
+RB_MOUTH_W = 1.8         # Mouth opening width (mm) — elastifies rubber band during press-in
+RB_CAVITY_W = 2.6        # Expanded internal cavity width (mm) — band travels freely
 RB_GROOVE_DEPTH = 2.8    # Groove depth (mm) along shaft mid-body
+RB_LIP_THICKNESS = 0.45  # Top retaining lip vertical thickness (mm)
+RB_CHAMFER_H = 0.55      # 45-degree self-supporting chamfer height (mm)
 RB_ANCHOR_W = 3.0        # Anchor slot width  (mm)
 RB_ANCHOR_L = 4.0        # Anchor slot length (mm) — rubber band end knotted here
 RB_ANCHOR_D = 3.0        # Anchor slot depth  (mm)
@@ -300,23 +307,55 @@ def make_ramp_cutter(width, y0, y1, z0, z1, z_top=15.0):
     return trimesh.convex.convex_hull(pts)
 
 
+def make_snap_fit_pinch_lip_cutter(y0, y1, w_mouth=RB_MOUTH_W, w_cavity=RB_CAVITY_W, z_floor=0.0, z_surf=2.8, lip_t=RB_LIP_THICKNESS, chamfer_h=RB_CHAMFER_H, z_top=15.0):
+    """
+    Creates a snap-fit undercut cutter mesh with inward retaining lips:
+    1. Lower wide cavity: width w_cavity (2.6mm) from z_floor up to (z_surf - lip_t - chamfer_h).
+    2. Self-supporting 45° chamfer transition from w_cavity up to w_mouth (1.8mm).
+    3. Narrow mouth opening: width w_mouth (1.8mm) extending through the top dorsal skin.
+    """
+    y_len = y1 - y0
+    y_c = (y0 + y1) / 2.0
+    z_chamfer_bot = z_surf - lip_t - chamfer_h
+    h_cav = z_chamfer_bot - z_floor
+    cav_box = box(extents=[w_cavity, y_len, h_cav])
+    cav_box.apply_translation([0, y_c, z_floor + h_cav / 2.0])
+
+    z_chamfer_top = z_surf - lip_t
+    hw_c = w_cavity / 2.0
+    hw_m = w_mouth / 2.0
+    pts_chamfer = np.array([
+        [-hw_c, y0, z_chamfer_bot], [ hw_c, y0, z_chamfer_bot],
+        [-hw_c, y1, z_chamfer_bot], [ hw_c, y1, z_chamfer_bot],
+        [-hw_m, y0, z_chamfer_top], [ hw_m, y0, z_chamfer_top],
+        [-hw_m, y1, z_chamfer_top], [ hw_m, y1, z_chamfer_top]
+    ])
+    chamfer_hull = trimesh.convex.convex_hull(pts_chamfer)
+
+    h_mouth = z_top - z_chamfer_top
+    mouth_box = box(extents=[w_mouth, y_len, h_mouth])
+    mouth_box.apply_translation([0, y_c, z_chamfer_top + h_mouth / 2.0])
+
+    return trimesh.boolean.union([cav_box, chamfer_hull, mouth_box])
+
+
 def make_dorsal_open_groove_cutters(length, height, is_distal=False):
     """
-    Creates cutters for continuous, 100% open-from-above dorsal rubber band routing (v8):
-    - Completely eliminates all retaining loops/bridges for direct, snap-in elastic band loading.
+    Creates cutters for continuous snap-fit dorsal rubber band routing (v8):
+    - Completely eliminates all retaining loops/bridges.
+    - Features snap-fit pinch lips (1.8mm mouth, 2.6mm undercut cavity) along the shaft.
+      The rubber band is pressed in from above and snaps captive inside the channel.
     - Zero drooping ceilings, zero internal supports, zero needle threading required.
     - Runs uninterrupted from proximal clevis tip (y = -6.0 mm) all the way through to the distal tip.
     - At the female clevis root (y in [-6.0, y_clevis_root]), the groove floor is at a calibrated
       depth of z_joint_floor = z_surf - 0.85 mm, guaranteeing ~1.0mm of solid plastic ceiling over
       the clevis slot cylinder (zero breakthrough arch, zero window slits).
     - A smooth monotonic ramp transitions from z_joint_floor down to the shaft floor z_groove_floor.
-    - The groove runs completely open from above (+Z open to the air) along the entire shaft length.
     - On proximal and intermediate phalanges, a smooth exit ramp transitions back up to z_joint_floor
       at length - 4.5 mm, continuing all the way through the distal male tongue to length + 6.0 mm.
-    - On distal phalanx, the open groove extends continuously through the fingertip, intersecting
+    - On distal phalanx, the snap-fit groove extends continuously through the fingertip, intersecting
       the transverse retention bore at 78% length.
     """
-    groove_w = RB_GROOVE_W
     z_surf = height * (0.44 if is_distal else 0.446)
     z_groove_floor = z_surf - RB_GROOVE_DEPTH
     z_joint_floor = z_surf - 0.85
@@ -330,45 +369,50 @@ def make_dorsal_open_groove_cutters(length, height, is_distal=False):
     y_base_start = -6.0
     y_base_len = y_clevis_root - y_base_start
     y_base_c = (y_base_start + y_clevis_root) / 2
-    cut_base = box(extents=[groove_w, y_base_len + 0.1, 15.0])
+    cut_base = box(extents=[RB_MOUTH_W, y_base_len + 0.1, 15.0])
     cut_base.apply_translation([0, y_base_c, z_joint_floor + 7.5])
     cutters.append(cut_base)
 
     # 2. Smooth ramp from clevis root down into the shaft groove floor
-    ramp_len = 3.0
+    ramp_len = 2.5
     y_ramp_end = min(y_clevis_root + ramp_len, length * 0.35)
-    ramp_in = make_ramp_cutter(groove_w, y_clevis_root, y_ramp_end, z_joint_floor, z_groove_floor)
+    ramp_in = make_ramp_cutter(RB_MOUTH_W, y_clevis_root, y_ramp_end, z_joint_floor, z_groove_floor)
     cutters.append(ramp_in)
 
-    # 3. Main shaft open groove (completely open from above - NO LOOPS / NO BRIDGES)
+    # 3. Main shaft snap-fit undercut channel with pinch lips
     if is_distal:
         # Runs from ramp end all the way through fingertip (y = length + 2.0)
         y_end = length + 2.0
-        y_shaft_len = y_end - y_ramp_end
-        y_shaft_c = (y_ramp_end + y_end) / 2
-        cut_shaft = box(extents=[groove_w, y_shaft_len + 0.1, 15.0])
-        cut_shaft.apply_translation([0, y_shaft_c, z_groove_floor + 7.5])
+        cut_shaft = make_snap_fit_pinch_lip_cutter(
+            y_ramp_end - 0.05, y_end,
+            w_mouth=RB_MOUTH_W, w_cavity=RB_CAVITY_W,
+            z_floor=z_groove_floor, z_surf=z_surf
+        )
         cutters.append(cut_shaft)
     else:
         # Runs through shaft to ramp_dist, then ramps up through male tongue
         y_end = length + 6.0
         y_ramp_dist = length - 4.5
         if y_ramp_dist > y_ramp_end:
-            y_shaft_len = y_ramp_dist - y_ramp_end
-            y_shaft_c = (y_ramp_end + y_ramp_dist) / 2
-            cut_shaft = box(extents=[groove_w, y_shaft_len + 0.1, 15.0])
-            cut_shaft.apply_translation([0, y_shaft_c, z_groove_floor + 7.5])
+            cut_shaft = make_snap_fit_pinch_lip_cutter(
+                y_ramp_end - 0.05, y_ramp_dist + 0.05,
+                w_mouth=RB_MOUTH_W, w_cavity=RB_CAVITY_W,
+                z_floor=z_groove_floor, z_surf=z_surf
+            )
             cutters.append(cut_shaft)
 
-            ramp_out = make_ramp_cutter(groove_w, y_ramp_dist, length - 1.0, z_groove_floor, z_joint_floor)
+            ramp_out = make_ramp_cutter(RB_MOUTH_W, y_ramp_dist, length - 1.0, z_groove_floor, z_joint_floor)
             cutters.append(ramp_out)
 
-            cut_tongue = box(extents=[groove_w, y_end - (length - 1.0) + 0.1, 15.0])
+            cut_tongue = box(extents=[RB_MOUTH_W, y_end - (length - 1.0) + 0.1, 15.0])
             cut_tongue.apply_translation([0, ((length - 1.0) + y_end) / 2, z_joint_floor + 7.5])
             cutters.append(cut_tongue)
         else:
-            cut_shaft = box(extents=[groove_w, y_end - y_ramp_end + 0.1, 15.0])
-            cut_shaft.apply_translation([0, (y_ramp_end + y_end) / 2, z_groove_floor + 7.5])
+            cut_shaft = make_snap_fit_pinch_lip_cutter(
+                y_ramp_end - 0.05, y_end,
+                w_mouth=RB_MOUTH_W, w_cavity=RB_CAVITY_W,
+                z_floor=z_groove_floor, z_surf=z_surf
+            )
             cutters.append(cut_shaft)
 
     return cutters, z_groove_floor
@@ -862,14 +906,15 @@ def verify_kinematic_range_of_motion():
 
 def build_iteration_8():
     print("=" * 75)
-    print("BUILDING ITERATION 8 (v8.0 - LOOP-FREE CONTINUOUS OPEN DORSAL GROOVES)")
-    print("  Dorsal Routing     : 100% OPEN U-channel (ALL LOOPS / BRIDGES REMOVED)")
-    print("  Groove spec        : 2.4mm wide × 2.8mm deep along mid-shaft; zero drooping bridges")
-    print("  Assembly benefit   : Snap-in elastic band loading; zero needle/wire threading")
+    print("BUILDING ITERATION 8 (v8.0 - SNAP-FIT PINCH-LIP DORSAL RETENTION)")
+    print("  Dorsal Routing     : SNAP-FIT PINCH-LIP UNDERCUT CHANNEL (ZERO LOOPS / BRIDGES)")
+    print("  Channel Geometry   : 1.8mm mouth slit -> 45° chamfer -> 2.6mm wide x 1.8mm captive cavity")
+    print("  Retention Action   : Band presses in from above; expands and locks captive inside cavity")
+    print("  Printability       : 100% self-supporting 45° FDM overhangs; zero drooping bridges or supports")
     print("  Nail Bed Carving   : Shallow 0.70mm deep nail plate carving on all 5 distal tips")
     print("  Joint Limit        : ONE-DIRECTIONAL 0°→95° flexion; rigid 0° extension hard stop")
     print("  Anterior (palmar)  : Servo wire through Ø2.5mm bore  → ACTIVE FLEXION 0°→95°")
-    print("  Posterior (dorsal) : Rubber band in continuous open groove → PASSIVE EXTENSION")
+    print("  Posterior (dorsal) : Rubber band in snap-fit captive channel → PASSIVE EXTENSION")
     print("  Anchor spec        : Ø2.0mm transverse bore (distal tip) + 3×4×2.5mm slot (palm)")
     print("  Pin Hole Diameter  : 3.4 mm (Smooth clearance for M3 bolts)")
     print("  Output Directory   : " + STL_DIR_V8)
