@@ -1,5 +1,12 @@
 // =========================================================================
-// Parametric Biomimetic Musculoskeletal Hand Platform (27 DoF)
+// [LEGACY / DEPRECATED v0 CONCEPT — DO NOT PRINT FOR v9.0 BUILDS]
+// Notice: This file is the initial v0 parametric OpenSCAD concept model
+// (originally drafted for 27-DoF / McKibben muscle routing exploration).
+// It has been superseded by the modular Python/Trimesh v9.0 CAD pipeline in
+// `cad_v9/` (`digits.py`, `chassis.py`), compiled via `generate_hand_stl_v9.py`
+// into production watertight STLs under `stl_exports_v9/`.
+// =========================================================================
+// Parametric Biomimetic Musculoskeletal Hand Platform (27 DoF - Legacy v0)
 // 36x McKibben Hydraulic Artificial Muscle Routing & Composite Bones
 // Exact Anatomical Parity: Digits (16 DoF), Thumb (5 DoF), Palm (2 DoF), Wrist (4 DoF)
 // =========================================================================

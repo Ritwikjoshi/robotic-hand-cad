@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomimetic Musculoskeletal Hand Platform - 27 DoF Servo-Driven Tendon Network</title>
+    <title>Biomimetic Robotic Hand v9.0 — Snap-Fit &amp; Hex-Captive CAD + 27-DoF Kinematic Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -68,6 +68,13 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h1 .badge {
+            -webkit-text-fill-color: var(--accent-cyan);
         }
 
         .header-title p {
@@ -78,7 +85,7 @@
         .control-panel {
             top: 24px;
             right: 28px;
-            width: 340px;
+            width: 348px;
             max-height: calc(100vh - 48px);
             overflow-y: auto;
             pointer-events: auto;
@@ -86,14 +93,14 @@
             backdrop-filter: blur(16px);
             border-radius: 16px;
             border: 1px solid var(--border-color);
-            padding: 22px;
+            padding: 20px 22px;
             box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
         }
 
         .panel-section {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 16px;
+            padding-bottom: 15px;
         }
 
         .panel-section:last-child {
@@ -108,14 +115,18 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--accent-cyan);
-            margin-bottom: 12px;
+            margin-bottom: 11px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .slider-group {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+        }
+
+        .slider-group:last-child {
+            margin-bottom: 0;
         }
 
         .slider-label {
@@ -163,7 +174,7 @@
             background: #1e293b;
             color: var(--text-main);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 8px 12px;
+            padding: 8px 10px;
             font-size: 12px;
             font-weight: 600;
             border-radius: 8px;
@@ -192,7 +203,7 @@
         }
 
         .specs-table td {
-            padding: 4px 0;
+            padding: 3.5px 0;
         }
 
         .specs-table td:last-child {
@@ -208,21 +219,22 @@
             background: rgba(56, 189, 248, 0.15);
             color: var(--accent-cyan);
             border: 1px solid rgba(56, 189, 248, 0.35);
+            letter-spacing: 0.6px;
         }
     </style>
 </head>
 <body>
 
     <div class="hud-overlay header-title">
-        <h1>Biomimetic Musculoskeletal Hand (27 DoF)</h1>
-        <p>High-Torque Digital Servo Actuators · Dyneema Tendon Network · Carbon-Composite Skeleton</p>
+        <h1>Biomimetic Robotic Hand Platform <span class="badge">v9.0 CAD</span></h1>
+        <p>Snap-Fit Dorsal Pinch-Lip Channels · Captive M3 Hex-Nut Clevises · 6-Servo Forearm Rack · 27-DoF Sim</p>
     </div>
 
     <div class="hud-overlay control-panel">
         <div class="panel-section">
             <div class="section-title">
                 Natural Grasp Presets
-                <span class="badge">Biomimetic IK</span>
+                <span class="badge">v9.0 Kinematics</span>
             </div>
             <div class="btn-grid">
                 <button onclick="setPreset('open')" class="active" id="btn-open">Relaxed Rest</button>
@@ -234,43 +246,41 @@
 
         <div class="panel-section">
             <div class="section-title">Thumb Biomechanics (CMC + MCP + IP)</div>
-            
+
             <div class="slider-group">
-                <div class="slider-label">Thumb Opposition (Pronation) <span class="val" id="val-th-opp">0°</span></div>
+                <div class="slider-label">Thumb Opposition (Pronation) <span class="val" id="val-th-opp">15°</span></div>
                 <input type="range" id="slider-th-opp" min="0" max="65" value="15" oninput="updateHand()">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label">Thumb Palmar Flexion <span class="val" id="val-th-flex">0°</span></div>
-                <input type="range" id="slider-th-flex" min="0" max="70" value="12" oninput="updateHand()">
+                <div class="slider-label">Thumb Palmar Flexion <span class="val" id="val-th-flex">12°</span></div>
+                <input type="range" id="slider-th-flex" min="0" max="85" value="12" oninput="updateHand()">
             </div>
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Finger Flexion</div>
+            <div class="section-title">Finger Flexion (0° Hard-Stop → 95°)</div>
 
             <div class="slider-group">
                 <div class="slider-label">Index Finger <span class="val" id="val-index">16°</span></div>
-                <input type="range" id="slider-index" min="0" max="90" value="16" oninput="updateHand()">
+                <input type="range" id="slider-index" min="0" max="95" value="16" oninput="updateHand()">
             </div>
 
             <div class="slider-group">
                 <div class="slider-label">Middle Finger <span class="val" id="val-middle">18°</span></div>
-                <input type="range" id="slider-middle" min="0" max="90" value="18" oninput="updateHand()">
+                <input type="range" id="slider-middle" min="0" max="95" value="18" oninput="updateHand()">
             </div>
 
             <div class="slider-group">
                 <div class="slider-label">Ring Finger <span class="val" id="val-ring">20°</span></div>
-                <input type="range" id="slider-ring" min="0" max="90" value="20" oninput="updateHand()">
+                <input type="range" id="slider-ring" min="0" max="95" value="20" oninput="updateHand()">
             </div>
 
             <div class="slider-group">
                 <div class="slider-label">Pinky Finger <span class="val" id="val-pinky">22°</span></div>
-                <input type="range" id="slider-pinky" min="0" max="90" value="22" oninput="updateHand()">
+                <input type="range" id="slider-pinky" min="0" max="95" value="22" oninput="updateHand()">
             </div>
         </div>
-
-
 
         <div class="panel-section">
             <div class="section-title">27-DoF Multi-Joint Articulation</div>
@@ -279,7 +289,7 @@
                 <input type="range" id="slider-abduction" min="-15" max="15" value="0" oninput="updateHand()">
             </div>
             <div class="slider-group">
-                <div class="slider-label">Palmar Arch Cupping (4th/5th Ray) <span class="val" id="val-palmar-cup">0°</span></div>
+                <div class="slider-label">Palmar Arch Cupping (4th/5th Ray) <span class="val" id="val-palmar-cup">6°</span></div>
                 <input type="range" id="slider-palmar-cup" min="0" max="30" value="6" oninput="updateHand()">
             </div>
             <div class="slider-group">
@@ -287,33 +297,40 @@
                 <input type="range" id="slider-wrist-pitch" min="-45" max="45" value="0" oninput="updateHand()">
             </div>
             <div class="slider-group">
-                <div class="slider-label">Wrist Yaw (Dev) & Pronation <span class="val" id="val-wrist-yaw">0°</span></div>
+                <div class="slider-label">Wrist Yaw (Radial/Ulnar Dev) <span class="val" id="val-wrist-yaw">0°</span></div>
                 <input type="range" id="slider-wrist-yaw" min="-35" max="35" value="0" oninput="updateHand()">
             </div>
-        </div>
-
-        <div class="panel-section">
-            <div class="section-title">Visual Layers & Muscle Net</div>
-            <div class="btn-grid">
-                <button onclick="toggleServos()" id="btn-servos" class="active">Servos & Tendons</button>
-                <button onclick="toggleWireframe()" id="btn-wire">Wireframe</button>
-                <button onclick="toggleExploded()" id="btn-explode">Exploded</button>
-                <button onclick="toggleTheme()" id="btn-theme">Carbon Matrix</button>
-                <button onclick="resetCamera()">Reset View</button>
+            <div class="slider-group">
+                <div class="slider-label">Forearm / Wrist Pronation <span class="val" id="val-wrist-pron">0°</span></div>
+                <input type="range" id="slider-wrist-pron" min="-45" max="45" value="0" oninput="updateHand()">
             </div>
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Biomimetic Platform Specs</div>
+            <div class="section-title">Visual Layers &amp; Muscle Net</div>
+            <div class="btn-grid">
+                <button onclick="toggleServos()" id="btn-servos" class="active">Servos &amp; Tendons</button>
+                <button onclick="toggleWireframe()" id="btn-wire">Wireframe</button>
+                <button onclick="toggleExploded()" id="btn-explode">Exploded</button>
+                <button onclick="toggleTheme()" id="btn-theme">Theme: Cyber Tone</button>
+                <button onclick="resetCamera()" style="grid-column: span 2;">Reset Camera View</button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">
+                v9.0 Architecture &amp; Specs
+                <span class="badge">stl_exports_v9</span>
+            </div>
             <table class="specs-table">
-                <tr><td>Degrees of Freedom</td><td>27 DoF (Anatomical Parity)</td></tr>
-                <tr><td>Actuation Mechanism</td><td>Digital Coreless Metal-Gear Servos</td></tr>
-                <tr><td>Tendon Material</td><td>Dyneema / UHMWPE (50-80 lb)</td></tr>
-                <tr><td>Grip Force (Nominal)</td><td>~6.8 kg (15 lbs) Cumulative</td></tr>
-                <tr><td>Response Latency</td><td>&lt; 40 ms High-Speed PWM</td></tr>
-                <tr><td>Skeletal Framework</td><td>Carbon-PEEK Composite + Ligaments</td></tr>
-                <tr><td>Sensory Feedback</td><td>AS5600 Angle + Current Sensing</td></tr>
-                <tr><td>Fatigue Threshold</td><td>650,000+ Cycles</td></tr>
+                <tr><td>CAD / Sim Architecture</td><td>16-Part v9.0 CAD · 27-DoF Sim</td></tr>
+                <tr><td>Forearm Servo Bay</td><td>6× MG90S Open Dual-Column Rack</td></tr>
+                <tr><td>Flexor Routing</td><td>Ø2.2–2.8 mm Dyneema (3.5 mm Arm)</td></tr>
+                <tr><td>Dorsal Return</td><td>1.8→2.6 mm Snap-Fit Pinch-Lip</td></tr>
+                <tr><td>Joint Fasteners</td><td>M3 Bolts + Captive 6-Flat Hex Nut</td></tr>
+                <tr><td>Fingertip Force</td><td>~1.7 N (MG90S) · ~5.0 N (HV KST)</td></tr>
+                <tr><td>Joint Envelope</td><td>0° Hard-Stop to 95° Collision-Free</td></tr>
+                <tr><td>Distal Aesthetics</td><td>0.70 mm Recessed Nail Plates</td></tr>
             </table>
         </div>
     </div>
@@ -324,23 +341,32 @@
         let scene, camera, renderer, controls;
         let fingers = {};
         let thumbRigs = {};
-        let palmGroup;
+        let forearmGroup;
         let wristGroup;
+        let palmGroup;
+        let palmSkin;
         let ulnarPalmGroup;
         let servoTendonGroup;
+        let servoUnits = [];
+        let dynamicRoutes = [];
+
         let isWireframe = false;
         let isExploded = false;
         let isBioLook = false;
         let showServos = true;
 
-        const PALM_W = 74;
-        const PALM_L = 84;
-        const PALM_H = 21;
+        // v9.0 Calibrated Palm & Joint Constants (mm)
+        const PALM_W = 76;
+        const PALM_L = 86;
+        const PALM_H = 22;
+        const NAIL_DEPTH = 0.70;
+        const ULNAR_PIVOT = new THREE.Vector3(8, 18, 0);
 
+        // Materials
         const matChassis = new THREE.MeshStandardMaterial({
             color: 0x242e42,
             roughness: 0.38,
-            metalness: 0.6
+            metalness: 0.58
         });
 
         const matBioBone = new THREE.MeshStandardMaterial({
@@ -355,13 +381,32 @@
             metalness: 0.15
         });
 
-        const matPin = new THREE.MeshStandardMaterial({
-            color: 0xf1f5f9,
-            roughness: 0.15,
-            metalness: 0.95
+        const matNailBed = new THREE.MeshStandardMaterial({
+            color: 0x1e293b,
+            roughness: 0.52,
+            metalness: 0.30
         });
 
-        // High-Torque Digital Servo & Dyneema Tendon Materials
+        const matNailPlate = new THREE.MeshStandardMaterial({
+            color: 0x7dd3fc,
+            roughness: 0.20,
+            metalness: 0.35,
+            transparent: true,
+            opacity: 0.90
+        });
+
+        const matPin = new THREE.MeshStandardMaterial({
+            color: 0xf1f5f9,
+            roughness: 0.18,
+            metalness: 0.92
+        });
+
+        const matHexNut = new THREE.MeshStandardMaterial({
+            color: 0xcbd5e1,
+            roughness: 0.25,
+            metalness: 0.88
+        });
+
         const matServoCase = new THREE.MeshStandardMaterial({
             color: 0x1e293b,
             roughness: 0.45,
@@ -370,45 +415,222 @@
 
         const matServoHorn = new THREE.MeshStandardMaterial({
             color: 0x0284c7,
-            roughness: 0.30,
-            metalness: 0.85
+            roughness: 0.28,
+            metalness: 0.82
         });
 
         const matTendonLine = new THREE.MeshStandardMaterial({
             color: 0x38bdf8,
             roughness: 0.20,
-            metalness: 0.10,
+            metalness: 0.12,
             transparent: true,
-            opacity: 0.88
+            opacity: 0.92
         });
 
         const matTendonExtensor = new THREE.MeshStandardMaterial({
             color: 0xf43f5e,
-            roughness: 0.20,
-            metalness: 0.10,
+            roughness: 0.25,
+            metalness: 0.08,
             transparent: true,
-            opacity: 0.88
+            opacity: 0.92
         });
 
         const matLigament = new THREE.MeshStandardMaterial({
-            color: 0xfef08a,
-            roughness: 0.55,
+            color: 0xfacc15,
+            roughness: 0.45,
             metalness: 0.10,
             transparent: true,
             opacity: 0.85
         });
+
+        // Pre-allocated scratch math objects for zero-GC / zero-GPU-leak dynamic tube updates
+        const _upAxis = new THREE.Vector3(0, 1, 0);
+        const _refZ = new THREE.Vector3(0, 0, 1);
+        const _refX = new THREE.Vector3(1, 0, 0);
+        const _tmpN = new THREE.Vector3();
+        const _tmpB = new THREE.Vector3();
+        const _prevN = new THREE.Vector3();
+        const _quat = new THREE.Quaternion();
+
+        function makeMarker(parent, x, y, z) {
+            const m = new THREE.Object3D();
+            m.position.set(x, y, z);
+            parent.add(m);
+            return m;
+        }
+
+        /**
+         * Creates a reusable dynamic tubular tendon/band mesh whose vertex/normal
+         * buffers are updated in-place from bone-attached THREE.Object3D waypoints.
+         * Zero new Geometries or TypedArrays are allocated during updateHand().
+         */
+        function createDynamicTendon(waypoints, material, radius = 0.55, tubularSegments = 24, radialSegments = 8, withEndEyelet = false) {
+            const pts = waypoints.map(() => new THREE.Vector3());
+            const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.22);
+
+            const samplePts = [];
+            const tangents = [];
+            for (let i = 0; i <= tubularSegments; i++) {
+                samplePts.push(new THREE.Vector3());
+                tangents.push(new THREE.Vector3());
+            }
+
+            const cosTbl = new Float32Array(radialSegments + 1);
+            const sinTbl = new Float32Array(radialSegments + 1);
+            for (let j = 0; j <= radialSegments; j++) {
+                const ang = (j / radialSegments) * Math.PI * 2;
+                cosTbl[j] = Math.cos(ang);
+                sinTbl[j] = Math.sin(ang);
+            }
+
+            const vertCount = (tubularSegments + 1) * (radialSegments + 1);
+            const positions = new Float32Array(vertCount * 3);
+            const normals = new Float32Array(vertCount * 3);
+            const indices = [];
+
+            const stride = radialSegments + 1;
+            for (let i = 0; i < tubularSegments; i++) {
+                for (let j = 0; j < radialSegments; j++) {
+                    const a = i * stride + j;
+                    const b = (i + 1) * stride + j;
+                    const c = (i + 1) * stride + (j + 1);
+                    const d = i * stride + (j + 1);
+                    indices.push(a, b, d, b, c, d);
+                }
+            }
+
+            const geom = new THREE.BufferGeometry();
+            geom.setIndex(indices);
+            geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+
+            const mesh = new THREE.Mesh(geom, material);
+            mesh.frustumCulled = false;
+            servoTendonGroup.add(mesh);
+
+            let eyelet = null;
+            if (withEndEyelet) {
+                const ringGeom = new THREE.TorusGeometry(radius * 1.65, radius * 0.45, 8, 16);
+                ringGeom.rotateX(Math.PI / 2);
+                eyelet = new THREE.Mesh(ringGeom, matPin);
+                servoTendonGroup.add(eyelet);
+            }
+
+            const route = {
+                waypoints,
+                pts,
+                curve,
+                samplePts,
+                tangents,
+                cosTbl,
+                sinTbl,
+                tubularSegments,
+                radialSegments,
+                radius,
+                geom,
+                mesh,
+                eyelet
+            };
+            dynamicRoutes.push(route);
+            return route;
+        }
+
+        function updateDynamicTendon(route) {
+            const {
+                waypoints, pts, curve, samplePts, tangents,
+                cosTbl, sinTbl, tubularSegments, radialSegments,
+                radius, geom, eyelet
+            } = route;
+
+            for (let i = 0; i < waypoints.length; i++) {
+                waypoints[i].getWorldPosition(pts[i]);
+                servoTendonGroup.worldToLocal(pts[i]);
+            }
+
+            for (let i = 0; i <= tubularSegments; i++) {
+                curve.getPoint(i / tubularSegments, samplePts[i]);
+            }
+
+            for (let i = 0; i <= tubularSegments; i++) {
+                if (i === 0) {
+                    tangents[i].subVectors(samplePts[1], samplePts[0]);
+                } else if (i === tubularSegments) {
+                    tangents[i].subVectors(samplePts[i], samplePts[i - 1]);
+                } else {
+                    tangents[i].subVectors(samplePts[i + 1], samplePts[i - 1]);
+                }
+                if (tangents[i].lengthSq() < 1e-8) {
+                    tangents[i].set(0, 1, 0);
+                } else {
+                    tangents[i].normalize();
+                }
+            }
+
+            // Parallel-transport frame prevents 180-degree Frenet twist flips on straight segments
+            const ref = Math.abs(tangents[0].z) > 0.9 ? _refX : _refZ;
+            _prevN.crossVectors(tangents[0], ref).normalize();
+
+            const posArr = geom.attributes.position.array;
+            const normArr = geom.attributes.normal.array;
+            const stride = radialSegments + 1;
+
+            for (let i = 0; i <= tubularSegments; i++) {
+                const T = tangents[i];
+                if (i === 0) {
+                    _tmpN.copy(_prevN);
+                } else {
+                    _quat.setFromUnitVectors(tangents[i - 1], T);
+                    _tmpN.copy(_prevN).applyQuaternion(_quat);
+                    _tmpN.addScaledVector(T, -_tmpN.dot(T));
+                    if (_tmpN.lengthSq() < 1e-8) {
+                        _tmpN.copy(_prevN);
+                    } else {
+                        _tmpN.normalize();
+                    }
+                    _prevN.copy(_tmpN);
+                }
+                _tmpB.crossVectors(T, _tmpN).normalize();
+
+                const P = samplePts[i];
+                for (let j = 0; j <= radialSegments; j++) {
+                    const c = cosTbl[j];
+                    const s = sinTbl[j];
+                    const nx = c * _tmpN.x + s * _tmpB.x;
+                    const ny = c * _tmpN.y + s * _tmpB.y;
+                    const nz = c * _tmpN.z + s * _tmpB.z;
+
+                    const idx = (i * stride + j) * 3;
+                    normArr[idx] = nx;
+                    normArr[idx + 1] = ny;
+                    normArr[idx + 2] = nz;
+
+                    posArr[idx] = P.x + radius * nx;
+                    posArr[idx + 1] = P.y + radius * ny;
+                    posArr[idx + 2] = P.z + radius * nz;
+                }
+            }
+
+            geom.attributes.position.needsUpdate = true;
+            geom.attributes.normal.needsUpdate = true;
+            geom.computeBoundingSphere();
+
+            if (eyelet) {
+                eyelet.position.copy(pts[pts.length - 1]);
+                eyelet.quaternion.setFromUnitVectors(_upAxis, tangents[tubularSegments]);
+            }
+        }
 
         function init() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x070a11);
 
-            const grid = new THREE.GridHelper(320, 32, 0x1e293b, 0x0f172a);
-            grid.position.y = -35;
+            const grid = new THREE.GridHelper(340, 34, 0x1e293b, 0x0f172a);
+            grid.position.y = -102;
             scene.add(grid);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(-30, -190, 150);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1200);
+            camera.position.set(-42, -175, 175);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -419,18 +641,22 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.target.set(0, 42, 0);
+            controls.target.set(0, 32, 8);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.72);
             scene.add(ambient);
 
-            const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
-            keyLight.position.set(120, -120, 220);
+            const keyLight = new THREE.DirectionalLight(0xffffff, 0.92);
+            keyLight.position.set(120, -110, 230);
             scene.add(keyLight);
 
-            const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.5);
-            fillLight.position.set(-160, 120, -80);
+            const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.52);
+            fillLight.position.set(-160, 130, -110);
             scene.add(fillLight);
+
+            const rimLight = new THREE.DirectionalLight(0xf8fafc, 0.35);
+            rimLight.position.set(40, 160, -160);
+            scene.add(rimLight);
 
             buildAnatomicalHand();
             updateHand();
@@ -439,55 +665,114 @@
             animate();
         }
 
+        /**
+         * Builds an organic phalanx with:
+         * - Palmar (+Z) compliant grip pad & 3.50 mm moment-arm flexor fairleads
+         * - Dorsal (-Z) v9 snap-fit pinch-lip groove representation
+         * - Captive 6-sided M3 hex nut (+X) & socket screw head (-X) at joint clevis
+         * - 0.70 mm recessed anatomical fingernail bed & keratin/composite nail plate on fingertips
+         */
         function buildOrganicPhalanx(len, wProx, hProx, wDist, hDist, isFingertip = false) {
             const group = new THREE.Group();
             const bodyGroup = new THREE.Group();
 
-            const proxBulbGeom = new THREE.SphereGeometry(hProx * 0.48, 20, 20);
+            // Proximal clevis condyle bulb
+            const proxBulbGeom = new THREE.SphereGeometry(hProx * 0.46, 20, 20);
             proxBulbGeom.scale(wProx / hProx, 1, 1);
             const proxBulb = new THREE.Mesh(proxBulbGeom, matBioBone);
             bodyGroup.add(proxBulb);
 
-            const midGeom = new THREE.CylinderGeometry(wDist * 0.42, wProx * 0.46, len, 24, 8);
-            midGeom.translate(0, len / 2, -0.4);
+            // Tapered phalanx shaft (slightly biased toward dorsal -Z to create palmar arch clearance)
+            const midGeom = new THREE.CylinderGeometry(wDist * 0.42, wProx * 0.46, len, 24, 6);
+            midGeom.translate(0, len / 2, -0.35);
             const midMesh = new THREE.Mesh(midGeom, matBioBone);
             bodyGroup.add(midMesh);
 
-            const padGeom = new THREE.SphereGeometry(hProx * 0.42, 20, 16);
-            padGeom.scale(wProx * 0.38 / (hProx * 0.42), len * 0.32 / (hProx * 0.42), 0.7);
+            // Palmar (+Z) tactile grip pad
+            const padGeom = new THREE.SphereGeometry(hProx * 0.40, 20, 16);
+            padGeom.scale(wProx * 0.38 / (hProx * 0.40), len * 0.33 / (hProx * 0.40), 0.68);
             const padMesh = new THREE.Mesh(padGeom, matPulp);
-            padMesh.position.set(0, len * 0.5, -hProx * 0.38);
+            padMesh.position.set(0, len * 0.48, hProx * 0.34);
             bodyGroup.add(padMesh);
 
-            const distBulbGeom = new THREE.SphereGeometry(hDist * 0.46, 20, 20);
-            distBulbGeom.scale(wDist / hDist, 1, 1);
+            // Dorsal (-Z) v9 snap-fit pinch-lip channel rails (terminating at 0.55*len before cuticle on distal tips)
+            const railFrac = isFingertip ? 0.42 : 0.72;
+            const railY = isFingertip ? len * 0.31 : len * 0.50;
+            const railZ = -((hProx + hDist) * 0.25) - 0.35;
+            [-1.15, 1.15].forEach(rx => {
+                const lipGeom = new THREE.BoxGeometry(0.55, len * railFrac, 0.85);
+                const lipMesh = new THREE.Mesh(lipGeom, matChassis);
+                lipMesh.position.set(rx, railY, railZ);
+                bodyGroup.add(lipMesh);
+            });
+
+            // Distal condyle / apex dome
+            const distBulbGeom = new THREE.SphereGeometry(hDist * 0.45, 20, 20);
+            distBulbGeom.scale(wDist / hDist, 1, 0.94);
             distBulbGeom.translate(0, len, 0);
             const distBulb = new THREE.Mesh(distBulbGeom, matBioBone);
             bodyGroup.add(distBulb);
 
             if (isFingertip) {
-                const pulpGeom = new THREE.SphereGeometry(hDist * 0.48, 24, 24);
-                pulpGeom.scale(wDist * 0.46 / (hDist * 0.48), 1.25, 0.85);
-                pulpGeom.translate(0, len * 0.7, -hDist * 0.22);
+                // Palmar (+Z) rounded fingertip tactile pulp
+                const pulpGeom = new THREE.SphereGeometry(hDist * 0.48, 24, 20);
+                pulpGeom.scale(wDist * 0.45 / (hDist * 0.48), 1.22, 0.82);
+                pulpGeom.translate(0, len * 0.74, hDist * 0.24);
                 const pulpMesh = new THREE.Mesh(pulpGeom, matPulp);
                 bodyGroup.add(pulpMesh);
+
+                // v9.0 Anatomical 0.70 mm Recessed Fingernail Bed & Curved Nail Plate on Dorsal (-Z) Tip
+                const nailW = wDist * 0.72;
+                const nailL = len * 0.44;
+                const nailCenterY = len * 0.78;
+                const dorsalSurfZ = -hDist * 0.41;
+
+                // Recessed nail bed rim / cuticle pocket (NAIL_DEPTH = 0.70 mm recessed step)
+                const bedGeom = new THREE.CylinderGeometry(nailW * 0.52, nailW * 0.48, nailL + 1.2, 20, 1, false, Math.PI * 0.68, Math.PI * 0.64);
+                bedGeom.scale(1.0, 1.0, 0.45);
+                const bedMesh = new THREE.Mesh(bedGeom, matNailBed);
+                bedMesh.position.set(0, nailCenterY - 0.3, dorsalSurfZ + 0.55);
+                bodyGroup.add(bedMesh);
+
+                // Curved fingernail plate seated 0.70 mm inside the dorsal nail bed
+                const plateGeom = new THREE.SphereGeometry(nailW * 0.50, 22, 18);
+                plateGeom.scale(0.96, (nailL * 0.52) / (nailW * 0.50), (NAIL_DEPTH * 2.1) / (nailW * 0.50));
+                const plateMesh = new THREE.Mesh(plateGeom, matNailPlate);
+                plateMesh.position.set(0, nailCenterY + 0.3, dorsalSurfZ - 0.15);
+                plateMesh.rotation.x = -0.08;
+                bodyGroup.add(plateMesh);
             }
 
-            const pinGeom = new THREE.CylinderGeometry(1.5, 1.5, wProx + 1.5, 16);
+            // M3 Stainless Hinge Pin + Socket Cap Head (-X) + Captive 6-Flat Hex Nut (+X)
+            const pinGeom = new THREE.CylinderGeometry(1.5, 1.5, wProx + 0.6, 16);
             pinGeom.rotateZ(Math.PI / 2);
             const pinMesh = new THREE.Mesh(pinGeom, matPin);
             bodyGroup.add(pinMesh);
 
+            const headGeom = new THREE.CylinderGeometry(2.6, 2.6, 1.2, 20);
+            headGeom.rotateZ(Math.PI / 2);
+            headGeom.translate(-wProx * 0.48, 0, 0);
+            bodyGroup.add(new THREE.Mesh(headGeom, matPin));
+
+            const hexNutGeom = new THREE.CylinderGeometry(2.9, 2.9, 1.2, 6);
+            hexNutGeom.rotateZ(Math.PI / 2);
+            hexNutGeom.translate(wProx * 0.48, 0, 0);
+            bodyGroup.add(new THREE.Mesh(hexNutGeom, matHexNut));
+
             group.add(bodyGroup);
-            return { group, len };
+            return { group, len, wProx, hProx, wDist, hDist };
         }
 
         function buildOrganicFinger(pLen, iLen, dLen, width, height) {
             const root = new THREE.Group();
 
-            const pP = buildOrganicPhalanx(pLen, width, height, width * 0.88, height * 0.88);
-            const iP = buildOrganicPhalanx(iLen, width * 0.88, height * 0.88, width * 0.78, height * 0.78);
-            const dP = buildOrganicPhalanx(dLen, width * 0.78, height * 0.78, width * 0.65, height * 0.68, true);
+            const hP = height;
+            const hI = height * 0.88;
+            const hD = height * 0.78;
+
+            const pP = buildOrganicPhalanx(pLen, width, hP, width * 0.88, hI, false);
+            const iP = buildOrganicPhalanx(iLen, width * 0.88, hI, width * 0.78, hD, false);
+            const dP = buildOrganicPhalanx(dLen, width * 0.78, hD, width * 0.68, height * 0.68, true);
 
             root.add(pP.group);
 
@@ -497,277 +782,487 @@
             dP.group.position.y = iLen;
             iP.group.add(dP.group);
 
+            // Bone-attached invisible THREE.Object3D fairlead waypoints
+            const markers = {
+                // Palmar (+Z) 3.50 mm moment-arm flexor fairleads & distal knot pocket
+                palmarProxA: makeMarker(pP.group, 0, pLen * 0.24, Math.max(3.5, hP * 0.36)),
+                palmarProxB: makeMarker(pP.group, 0, pLen * 0.80, Math.max(3.4, hI * 0.36)),
+                palmarInter: makeMarker(iP.group, 0, iLen * 0.55, Math.max(3.2, hI * 0.35)),
+                palmarTip:   makeMarker(dP.group, 0, dLen * 0.68, Math.max(2.9, hD * 0.32)),
+
+                // Dorsal (-Z) snap-fit pinch-lip channel waypoints terminating at cuticle (0.56 * dLen)
+                dorsalMCP:   makeMarker(pP.group, 0, 2.2, -hP * 0.48),
+                dorsalProx:  makeMarker(pP.group, 0, pLen * 0.56, -hP * 0.45),
+                dorsalPIP:   makeMarker(iP.group, 0, 2.0, -hI * 0.48),
+                dorsalInter: makeMarker(iP.group, 0, iLen * 0.58, -hI * 0.45),
+                dorsalDIP:   makeMarker(dP.group, 0, 1.8, -hD * 0.47),
+                dorsalTip:   makeMarker(dP.group, 0, dLen * 0.55, -hD * 0.43),
+
+                // Lateral proximal condyle attachment for interossei abduction line
+                abdInsertL:  makeMarker(pP.group, -width * 0.44, pLen * 0.28, 0.5),
+                abdInsertR:  makeMarker(pP.group,  width * 0.44, pLen * 0.28, 0.5)
+            };
+
             return {
                 root,
                 pJoint: pP.group,
                 iJoint: iP.group,
                 dJoint: dP.group,
-                pLen, iLen, dLen
+                pLen, iLen, dLen,
+                markers,
+                basePos: new THREE.Vector3()
             };
         }
 
-        
-        function createMicroServo(pos, rotZ = 0) {
+        function createMicroServo(pos, sideSign, label) {
             const sGroup = new THREE.Group();
             sGroup.position.copy(pos);
-            sGroup.rotation.z = rotZ;
 
-            // Servo Main Body (12 x 23 x 24 mm standard micro servo)
-            const bodyGeom = new THREE.BoxGeometry(11, 22.5, 23);
+            // MG90S Micro-Servo Main Case (12.2 x 22.8 x 22.5 mm)
+            const bodyGeom = new THREE.BoxGeometry(12.0, 22.4, 22.0);
             const bodyMesh = new THREE.Mesh(bodyGeom, matServoCase);
             sGroup.add(bodyMesh);
 
-            // Servo Mounting Flange / Tabs
-            const flangeGeom = new THREE.BoxGeometry(12, 31, 2.5);
-            flangeGeom.translate(0, 0, 7.5);
+            // Side-loading mounting tabs with M2 screw heads
+            const flangeGeom = new THREE.BoxGeometry(12.2, 31.5, 2.4);
+            flangeGeom.translate(0, 0, 6.8);
             const flangeMesh = new THREE.Mesh(flangeGeom, matServoCase);
             sGroup.add(flangeMesh);
 
-            // Output Gear Spindle & Winch Spool
-            const spoolGeom = new THREE.CylinderGeometry(4.8, 4.8, 4.5, 18);
+            [-13.5, 13.5].forEach(ty => {
+                const m2Geom = new THREE.CylinderGeometry(1.1, 1.1, 1.2, 12);
+                m2Geom.rotateX(Math.PI / 2);
+                m2Geom.translate(0, ty, 8.3);
+                sGroup.add(new THREE.Mesh(m2Geom, matPin));
+            });
+
+            // Dynamic Rotating Output Spindle + Grooved Winch Spool + Dual Servo Horn
+            const rotor = new THREE.Group();
+            rotor.position.set(0, 5.5, 13.2);
+            sGroup.add(rotor);
+
+            const spoolGeom = new THREE.CylinderGeometry(4.8, 4.8, 4.2, 24);
             spoolGeom.rotateX(Math.PI / 2);
-            spoolGeom.translate(0, 6, 13);
-            const spoolMesh = new THREE.Mesh(spoolGeom, matServoHorn);
-            sGroup.add(spoolMesh);
+            rotor.add(new THREE.Mesh(spoolGeom, matServoHorn));
 
-            // Winch Horn Arms
-            const hornGeom = new THREE.BoxGeometry(14, 3, 2);
-            hornGeom.translate(0, 6, 15);
-            const hornMesh = new THREE.Mesh(hornGeom, matServoHorn);
-            sGroup.add(hornMesh);
+            const grooveRimGeom = new THREE.TorusGeometry(4.8, 0.45, 8, 24);
+            rotor.add(new THREE.Mesh(grooveRimGeom, matPin));
 
-            return sGroup;
+            const hornArmA = new THREE.BoxGeometry(15.5, 3.0, 1.8);
+            hornArmA.translate(0, 0, 2.2);
+            rotor.add(new THREE.Mesh(hornArmA, matServoHorn));
+
+            const hornArmB = new THREE.BoxGeometry(3.0, 11.0, 1.8);
+            hornArmB.translate(0, 0, 2.2);
+            rotor.add(new THREE.Mesh(hornArmB, matServoHorn));
+
+            const centerScrew = new THREE.CylinderGeometry(1.4, 1.4, 1.2, 14);
+            centerScrew.rotateX(Math.PI / 2);
+            centerScrew.translate(0, 0, 3.2);
+            rotor.add(new THREE.Mesh(centerScrew, matPin));
+
+            // Tangent cable payout exit from inner edge of winch spool toward central forearm channel
+            const spoolExit = makeMarker(sGroup, -sideSign * 4.5, 5.5, 13.2);
+
+            return { group: sGroup, rotor, spoolExit, sideSign, label };
         }
 
-        function createTendonRoute(startVec, endVec, isExtensor = false, radius = 0.55) {
-            const group = new THREE.Group();
-            const dir = new THREE.Vector3().subVectors(endVec, startVec);
-            const len = dir.length();
-            const mid = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5);
+        function buildForearmChassis() {
+            const chassis = new THREE.Group();
 
-            // High-tensile braided Dyneema tendon line
-            const geom = new THREE.CylinderGeometry(radius, radius, len, 8);
-            const mesh = new THREE.Mesh(geom, isExtensor ? matTendonExtensor : matTendonLine);
+            // 1. Y-Axis Wrist Mating Bulkhead Flange (matches v9 4-bolt Y-axis flange at y = 0..-5)
+            const flangeGeom = new THREE.CylinderGeometry(22, 22, 5.0, 32);
+            flangeGeom.scale(1.05, 1.0, 0.72);
+            flangeGeom.translate(0, -2.5, 0);
+            chassis.add(new THREE.Mesh(flangeGeom, matChassis));
 
-            const axis = new THREE.Vector3(0, 1, 0);
-            mesh.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
-            mesh.position.copy(mid);
-            group.add(mesh);
+            // 4x M3 Y-oriented Wrist Flange Bolts (±14.0, y, ±9.5)
+            [[-14, -9.5], [14, -9.5], [-14, 9.5], [14, 9.5]].forEach(([bx, bz]) => {
+                const bGeom = new THREE.CylinderGeometry(1.8, 1.8, 6.4, 16);
+                bGeom.translate(bx, -2.5, bz);
+                chassis.add(new THREE.Mesh(bGeom, matPin));
+            });
 
-            // Eyelet / Fairlead Ring at termination
-            const ringGeom = new THREE.TorusGeometry(radius * 1.5, radius * 0.45, 8, 16);
-            ringGeom.rotateX(Math.PI / 2);
-            const rMesh = new THREE.Mesh(ringGeom, matPin);
-            rMesh.position.copy(endVec);
-            group.add(rMesh);
+            // 2. Open-Access Dual-Column 6-Servo Forearm Structural Spine (Dorsal cradle so servos are visible!)
+            const spineGeom = new THREE.BoxGeometry(42, 78, 5.5);
+            spineGeom.translate(0, -43, -11.5);
+            chassis.add(new THREE.Mesh(spineGeom, matChassis));
 
-            return group;
+            // Central slotted tendon routing web between left (-X) and right (+X) servo columns
+            const centerWebGeom = new THREE.BoxGeometry(4.2, 76, 15);
+            centerWebGeom.translate(0, -43, -3.5);
+            chassis.add(new THREE.Mesh(centerWebGeom, matBioBone));
+
+            // 4 Horizontal Servo Bay Divider Shelves creating 6 open side-loading MG90S pockets
+            [-9.5, -33.5, -57.5, -80.5].forEach(sy => {
+                const shelfGeom = new THREE.BoxGeometry(42, 3.2, 18);
+                shelfGeom.translate(0, sy, -4.5);
+                chassis.add(new THREE.Mesh(shelfGeom, matBioBone));
+            });
+
+            // Proximal Forearm Base Collar at y = -82
+            const baseCollarGeom = new THREE.CylinderGeometry(23, 24, 6, 32);
+            baseCollarGeom.scale(1.04, 1.0, 0.76);
+            baseCollarGeom.translate(0, -82, -2);
+            chassis.add(new THREE.Mesh(baseCollarGeom, matChassis));
+
+            return chassis;
+        }
+
+        function buildKnuckleAssembly(parentGroup, lx, ly, lz, rotZ) {
+            const kGroup = new THREE.Group();
+            kGroup.position.set(lx, ly, lz);
+            kGroup.rotation.z = rotZ;
+
+            // Knuckle condyle mound
+            const kGeom = new THREE.SphereGeometry(7.8, 20, 20);
+            kGeom.scale(1.02, 1.12, 0.92);
+            kGroup.add(new THREE.Mesh(kGeom, matChassis));
+
+            // Dorsal v9 captive cross-pin elastic anchor boss
+            const anchorBossGeom = new THREE.BoxGeometry(5.6, 5.0, 3.2);
+            anchorBossGeom.translate(0, -5.5, -5.0);
+            kGroup.add(new THREE.Mesh(anchorBossGeom, matBioBone));
+
+            const crossPinGeom = new THREE.CylinderGeometry(0.95, 0.95, 6.2, 12);
+            crossPinGeom.rotateZ(Math.PI / 2);
+            crossPinGeom.translate(0, -5.5, -5.2);
+            kGroup.add(new THREE.Mesh(crossPinGeom, matPin));
+
+            parentGroup.add(kGroup);
+            return kGroup;
         }
 
         function buildAnatomicalHand() {
+            servoUnits = [];
+            dynamicRoutes = [];
+
+            // =========================================================================
+            // 1. STATIONARY FOREARM ROOT GROUP (Anchored in Scene — does NOT swing with wrist!)
+            // =========================================================================
+            forearmGroup = new THREE.Group();
+            forearmGroup.position.set(0, -18, 0);
+            scene.add(forearmGroup);
+
+            forearmGroup.add(buildForearmChassis());
+
+            // Servo & Dynamic Tendon Network Group (anchored in forearmGroup; toggled by showServos)
+            servoTendonGroup = new THREE.Group();
+            forearmGroup.add(servoTendonGroup);
+
+            // 6x Micro-Servos in Dual-Column Open Forearm Rack
+            const servoSpecs = [
+                { pos: new THREE.Vector3(-13.5, -21.5, -1.5), side: -1, label: 'index' },
+                { pos: new THREE.Vector3( 13.5, -21.5, -1.5), side:  1, label: 'middle' },
+                { pos: new THREE.Vector3(-13.5, -45.5, -1.5), side: -1, label: 'thumbFlex' },
+                { pos: new THREE.Vector3( 13.5, -45.5, -1.5), side:  1, label: 'ring' },
+                { pos: new THREE.Vector3(-13.5, -69.5, -1.5), side: -1, label: 'thumbOpp' },
+                { pos: new THREE.Vector3( 13.5, -69.5, -1.5), side:  1, label: 'pinkyCup' }
+            ];
+            servoSpecs.forEach(sp => {
+                const unit = createMicroServo(sp.pos, sp.side, sp.label);
+                servoUnits.push(unit);
+                servoTendonGroup.add(unit.group);
+            });
+
+            // =========================================================================
+            // 2. WRIST ARTICULATION JOINT AT (0, 0, 0) CHILD OF STATIONARY FOREARM
+            // =========================================================================
+            wristGroup = new THREE.Group();
+            wristGroup.position.set(0, 0, 0);
+            forearmGroup.add(wristGroup);
+
             palmGroup = new THREE.Group();
-            const palmSkin = new THREE.Group();
+            palmGroup.position.set(0, 0, 0);
+            wristGroup.add(palmGroup);
 
-            // Dorsal palm
-            const dorsalGeom = new THREE.BoxGeometry(PALM_W * 0.85, PALM_L * 0.88, PALM_H * 0.6);
-            dorsalGeom.translate(0, PALM_L * 0.48, PALM_H * 0.15);
-            const dorsalMesh = new THREE.Mesh(dorsalGeom, matChassis);
-            palmSkin.add(dorsalMesh);
+            // =========================================================================
+            // 3. RADIAL / CENTRAL PALM SKIN & CHASSIS (palmGroup.add(palmSkin) FIXED!)
+            // =========================================================================
+            palmSkin = new THREE.Group();
 
-            // Lower Thenar Eminence (Thumb base muscular ball)
-            const thenarGeom = new THREE.SphereGeometry(16, 24, 24);
-            thenarGeom.scale(1.15, 1.45, 0.95);
+            // Wrist carpal gimbal collar & mating flange
+            const wristGeom = new THREE.CylinderGeometry(16.5, 18.5, 12, 32);
+            wristGeom.scale(1.06, 1.0, 0.72);
+            wristGeom.translate(0, 4, 0);
+            palmSkin.add(new THREE.Mesh(wristGeom, matChassis));
+
+            // Radial & Central Metacarpal Chassis Body (Thumb + Index + Middle rays: x in [-30, +4])
+            const radialDorsalGeom = new THREE.BoxGeometry(36, PALM_L * 0.84, PALM_H * 0.56);
+            radialDorsalGeom.translate(-12.5, PALM_L * 0.47, -1.6);
+            palmSkin.add(new THREE.Mesh(radialDorsalGeom, matChassis));
+
+            // Lower Thenar Eminence (Thumb base muscular pad on palmar +Z side)
+            const thenarGeom = new THREE.SphereGeometry(15.5, 24, 24);
+            thenarGeom.scale(1.12, 1.48, 0.88);
             const thenar = new THREE.Mesh(thenarGeom, matPulp);
-            thenar.position.set(-PALM_W * 0.36, PALM_L * 0.28, -2.0);
-            thenar.rotation.set(0.40, -0.30, 0.45);
+            thenar.position.set(-PALM_W * 0.33, PALM_L * 0.31, 3.8);
+            thenar.rotation.set(-0.25, 0.25, 0.38);
             palmSkin.add(thenar);
 
-            // Hypothenar Eminence
-            const hypoGeom = new THREE.SphereGeometry(13.5, 24, 24);
-            hypoGeom.scale(0.85, 1.85, 0.8);
+            // Radial/Central Distal Palmar Metacarpal Cushion Ridge (under Index & Middle)
+            const radialRidgeGeom = new THREE.CylinderGeometry(6.8, 6.8, 33, 24);
+            radialRidgeGeom.rotateZ(Math.PI / 2);
+            radialRidgeGeom.scale(1.0, 1.0, 0.72);
+            radialRidgeGeom.translate(-14.5, PALM_L - 15, 3.6);
+            palmSkin.add(new THREE.Mesh(radialRidgeGeom, matPulp));
+
+            // Radial & Central Knuckle Condyles (Index & Middle)
+            buildKnuckleAssembly(palmSkin, -23, PALM_L - 6.5, 0.4, 0.07);
+            buildKnuckleAssembly(palmSkin, -8,  PALM_L - 4.0, 0.8, 0.02);
+
+            // Attach palmSkin to palmGroup (fixes previous orphan palm bug!)
+            palmGroup.add(palmSkin);
+
+            // =========================================================================
+            // 4. ULNAR PALMAR ARCH GROUP (4th & 5th Ray Cupping Hinge at ULNAR_PIVOT)
+            // =========================================================================
+            ulnarPalmGroup = new THREE.Group();
+            ulnarPalmGroup.position.copy(ULNAR_PIVOT);
+            palmGroup.add(ulnarPalmGroup);
+
+            const ulnarSkin = new THREE.Group();
+
+            // Ulnar Metacarpal Chassis Section (4th & 5th rays, local coords relative to ULNAR_PIVOT)
+            const ulnarBodyGeom = new THREE.BoxGeometry(28, PALM_L * 0.76, PALM_H * 0.54);
+            ulnarBodyGeom.translate(16.5 - ULNAR_PIVOT.x, PALM_L * 0.50 - ULNAR_PIVOT.y, -1.6 - ULNAR_PIVOT.z);
+            ulnarSkin.add(new THREE.Mesh(ulnarBodyGeom, matChassis));
+
+            // Hypothenar Eminence (Ulnar palmar muscular pad on +Z)
+            const hypoGeom = new THREE.SphereGeometry(13.0, 24, 24);
+            hypoGeom.scale(0.84, 1.82, 0.78);
             const hypo = new THREE.Mesh(hypoGeom, matPulp);
-            hypo.position.set(PALM_W * 0.35, PALM_L * 0.40, -3.0);
-            palmSkin.add(hypo);
+            hypo.position.set(PALM_W * 0.33 - ULNAR_PIVOT.x, PALM_L * 0.42 - ULNAR_PIVOT.y, 3.2 - ULNAR_PIVOT.z);
+            ulnarSkin.add(hypo);
 
-            // Distal Palmar Metacarpal Ridge
-            const ridgeGeom = new THREE.CylinderGeometry(7.5, 7.5, PALM_W * 0.78, 24);
-            ridgeGeom.rotateZ(Math.PI / 2);
-            ridgeGeom.translate(0, PALM_L - 14, -PALM_H * 0.2);
-            const ridge = new THREE.Mesh(ridgeGeom, matPulp);
-            palmSkin.add(ridge);
+            // Ulnar Distal Palmar Metacarpal Cushion Ridge (under Ring & Pinky)
+            const ulnarRidgeGeom = new THREE.CylinderGeometry(6.4, 6.4, 28, 24);
+            ulnarRidgeGeom.rotateZ(Math.PI / 2);
+            ulnarRidgeGeom.scale(1.0, 1.0, 0.72);
+            ulnarRidgeGeom.translate(15.5 - ULNAR_PIVOT.x, (PALM_L - 16.5) - ULNAR_PIVOT.y, 3.2 - ULNAR_PIVOT.z);
+            ulnarSkin.add(new THREE.Mesh(ulnarRidgeGeom, matPulp));
 
-            // 4 Knuckle mounds on cascade arch
-            const knuckleX = [-23, -8, 8, 23];
-            const knuckleY = [PALM_L - 2.5, PALM_L, PALM_L - 1.2, PALM_L - 3.8];
-            const knuckleZ = [0.4, 0.8, 0.3, -0.4];
+            // 4th & 5th Ray Knuckle Condyles (Ring & Pinky inside ulnarPalmGroup)
+            buildKnuckleAssembly(ulnarSkin, 8 - ULNAR_PIVOT.x,  (PALM_L - 5.2) - ULNAR_PIVOT.y, 0.3 - ULNAR_PIVOT.z,  -0.04);
+            buildKnuckleAssembly(ulnarSkin, 23 - ULNAR_PIVOT.x, (PALM_L - 7.8) - ULNAR_PIVOT.y, -0.4 - ULNAR_PIVOT.z, -0.10);
 
-            for (let i = 0; i < 4; i++) {
-                const kGeom = new THREE.SphereGeometry(8, 20, 20);
-                kGeom.scale(1.0, 1.15, 0.9);
-                const kMesh = new THREE.Mesh(kGeom, matChassis);
-                kMesh.position.set(knuckleX[i], knuckleY[i] - 5, knuckleZ[i]);
-                palmSkin.add(kMesh);
-            }
-
-            // Wrist interface
-            const wristGeom = new THREE.CylinderGeometry(15, 16, 14, 32);
-            const wristMesh = new THREE.Mesh(wristGeom, matChassis);
-            wristMesh.position.set(0, 0, 0);
-            palmSkin.add(wristMesh);
-
-            // Wrist Articulation Group (Flexion/Extension & Yaw/Deviation)
-            wristGroup = new THREE.Group();
-            wristGroup.position.set(0, -18, 0);
-
-            // Forearm Modular Servo Bay & PCA9685 Driver Chassis
-            const forearmGeom = new THREE.CylinderGeometry(23, 25, 82, 32);
-            forearmGeom.translate(0, -41, 0);
-            const forearmMesh = new THREE.Mesh(forearmGeom, matChassis);
-            wristGroup.add(forearmMesh);
-
-            // Servo Mount Bracket Rack
-            const rackGeom = new THREE.BoxGeometry(32, 54, 26);
-            rackGeom.translate(0, -40, 0);
-            const rackMesh = new THREE.Mesh(rackGeom, matBioBone);
-            wristGroup.add(rackMesh);
-
-            wristGroup.add(palmGroup);
-            scene.add(wristGroup);
+            ulnarPalmGroup.add(ulnarSkin);
 
             // =========================================================================
-            // HIGH-TORQUE DIGITAL SERVO ACTUATOR BANK & TENDON NETWORK
+            // 5. FOUR ARTICULATED DIGITS (Index & Middle in palmGroup; Ring & Pinky in ulnarPalmGroup)
             // =========================================================================
-            servoTendonGroup = new THREE.Group();
-
-            // 1. Forearm Modular Servo Bank (Array of micro-servos in dual column)
-            const servoConfigs = [
-                { pos: new THREE.Vector3(-8, -24, 0), rotZ: 0 },
-                { pos: new THREE.Vector3( 8, -24, 0), rotZ: 0 },
-                { pos: new THREE.Vector3(-8, -42, 0), rotZ: 0 },
-                { pos: new THREE.Vector3( 8, -42, 0), rotZ: 0 },
-                { pos: new THREE.Vector3(-8, -60, 0), rotZ: 0 },
-                { pos: new THREE.Vector3( 8, -60, 0), rotZ: 0 }
-            ];
-            servoConfigs.forEach(cfg => {
-                servoTendonGroup.add(createMicroServo(cfg.pos, cfg.rotZ));
-            });
-
-            // 2. High-Tensile Dyneema Tendon Routing to 4 Digits
-            const fingerAnchors = [
-                { name: 'index',  fx: -22, fz: -7, topY: PALM_L - 6, spoolPos: new THREE.Vector3(-8, -24, 13) },
-                { name: 'middle', fx: -7,  fz: -7, topY: PALM_L - 2, spoolPos: new THREE.Vector3( 8, -24, 13) },
-                { name: 'ring',   fx: 8,   fz: -7, topY: PALM_L - 4, spoolPos: new THREE.Vector3(-8, -42, 13) },
-                { name: 'pinky',  fx: 22,  fz: -6, topY: PALM_L - 8, spoolPos: new THREE.Vector3( 8, -42, 13) }
-            ];
-
-            fingerAnchors.forEach(fa => {
-                // Volar Flexor Tendon (Spool -> Carpal Tunnel -> Knuckle -> Distal Tip)
-                const pTunnel = new THREE.Vector3(fa.fx * 0.6, 12, fa.fz);
-                const pKnuckle = new THREE.Vector3(fa.fx, fa.topY * 0.55, fa.fz);
-                const pTip = new THREE.Vector3(fa.fx, fa.topY, fa.fz + 2);
-
-                servoTendonGroup.add(createTendonRoute(fa.spoolPos, pTunnel, false, 0.7));
-                servoTendonGroup.add(createTendonRoute(pTunnel, pKnuckle, false, 0.6));
-                servoTendonGroup.add(createTendonRoute(pKnuckle, pTip, false, 0.5));
-
-                // Dorsal Elastic Return Tendon
-                const dBase = new THREE.Vector3(fa.fx, 15, 6);
-                const dKnuckle = new THREE.Vector3(fa.fx, fa.topY * 0.6, 7);
-                const dTip = new THREE.Vector3(fa.fx, fa.topY, 6);
-                servoTendonGroup.add(createTendonRoute(dBase, dKnuckle, true, 0.5));
-                servoTendonGroup.add(createTendonRoute(dKnuckle, dTip, true, 0.45));
-            });
-
-            // 3. Finger Abduction / Adduction Tendon Lines (Interossei Servos)
-            const abdPairs = [
-                { s: new THREE.Vector3(-12, 28, 2), e: new THREE.Vector3(-21, 68, 2) },
-                { s: new THREE.Vector3(-3, 28, 2),  e: new THREE.Vector3(-9, 72, 2) },
-                { s: new THREE.Vector3(3, 28, 2),   e: new THREE.Vector3(7, 70, 2) },
-                { s: new THREE.Vector3(12, 28, 2),  e: new THREE.Vector3(20, 66, 2) }
-            ];
-            abdPairs.forEach(p => {
-                servoTendonGroup.add(createTendonRoute(p.s, p.e, false, 0.5));
-            });
-
-            // 4. Thumb Dedicated Tendon Rigging (Flexor, Opponens & Abductor)
-            const thumbServoSpool = new THREE.Vector3(-8, -60, 13);
-            const thumbThenarPort = new THREE.Vector3(-18, 12, -3);
-            const thumbMCP = new THREE.Vector3(-28, 30, -2);
-            const thumbTip = new THREE.Vector3(-26, 52, 2);
-
-            // Flexor Pollicis
-            servoTendonGroup.add(createTendonRoute(thumbServoSpool, thumbThenarPort, false, 0.75));
-            servoTendonGroup.add(createTendonRoute(thumbThenarPort, thumbMCP, false, 0.65));
-            servoTendonGroup.add(createTendonRoute(thumbMCP, thumbTip, false, 0.55));
-
-            // Opponens & Palmar Abductor Tendons
-            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-10, 16, -4), new THREE.Vector3(-27, 34, 4), false, 0.6));
-            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-14, 24, 6),  new THREE.Vector3(-25, 30, 4), true, 0.55));
-
-            // 5. Palmar Cupping Tendon & Wrist Gimbal Linkages
-            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(12, 14, -3), new THREE.Vector3(26, 40, -3), false, 0.65));
-            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(-16, -35, 0), new THREE.Vector3(-14, 0, 0), true, 0.8));
-            servoTendonGroup.add(createTendonRoute(new THREE.Vector3(16, -35, 0),  new THREE.Vector3(14, 0, 0), true, 0.8));
-
-            palmGroup.add(servoTendonGroup);
-
-            // 4 Digits
             const fingerConfigs = {
-                pinky:  { x: 23,  y: PALM_L - 3.8, z: -0.4, s: 0.78, rotZ: -0.10 },
-                ring:   { x: 8,   y: PALM_L - 1.2, z:  0.3, s: 0.92, rotZ: -0.04 },
-                middle: { x: -8,  y: PALM_L,       z:  0.8, s: 1.00, rotZ:  0.02 },
-                index:  { x: -23, y: PALM_L - 2.5, z:  0.4, s: 0.90, rotZ:  0.07 }
+                index:  { x: -23, y: PALM_L - 6.5, z:  0.4, s: 0.90, rotZ:  0.07, ulnar: false, servoIdx: 0, explodeMul: 1.00 },
+                middle: { x: -8,  y: PALM_L - 4.0, z:  0.8, s: 1.00, rotZ:  0.02, ulnar: false, servoIdx: 1, explodeMul: 1.30 },
+                ring:   { x:  8,  y: PALM_L - 5.2, z:  0.3, s: 0.92, rotZ: -0.04, ulnar: true,  servoIdx: 3, explodeMul: 1.05 },
+                pinky:  { x: 23,  y: PALM_L - 7.8, z: -0.4, s: 0.78, rotZ: -0.10, ulnar: true,  servoIdx: 5, explodeMul: 0.80 }
             };
 
             for (const [name, cfg] of Object.entries(fingerConfigs)) {
                 const s = cfg.s;
-                const f = buildOrganicFinger(38 * s, 26 * s, 22 * s, 14.5 * s, 12.5 * s);
-                f.root.position.set(cfg.x, cfg.y - 2, cfg.z);
+                const f = buildOrganicFinger(38 * s, 26 * s, 22 * s, 14.2 * s, 12.2 * s);
+                const parentNode = cfg.ulnar ? ulnarPalmGroup : palmGroup;
+                const lx = cfg.ulnar ? cfg.x - ULNAR_PIVOT.x : cfg.x;
+                const ly = cfg.ulnar ? cfg.y - ULNAR_PIVOT.y : cfg.y;
+                const lz = cfg.ulnar ? cfg.z - ULNAR_PIVOT.z : cfg.z;
+
+                f.root.position.set(lx, ly, lz);
+                f.basePos.set(lx, ly, lz);
+                f.explodeMul = cfg.explodeMul;
                 f.root.rotation.z = cfg.rotZ;
-                palmGroup.add(f.root);
+                parentNode.add(f.root);
                 fingers[name] = f;
+
+                // Build Dynamic Palmar Flexor Tendon (Forearm Spool -> Wrist Carpal Tunnel -> Knuckle Pulley -> pJoint -> iJoint -> dJoint Knot Pocket)
+                const spoolWP = servoUnits[cfg.servoIdx].spoolExit;
+                const forearmExitWP = makeMarker(forearmGroup, cfg.x * 0.25, -2.0, 5.0);
+                const carpalWP = makeMarker(palmGroup, cfg.x * 0.45, 11.0, 4.8);
+                const knucklePalmarWP = makeMarker(
+                    parentNode,
+                    lx,
+                    ly - 9.0,
+                    lz + 4.8
+                );
+
+                createDynamicTendon(
+                    [
+                        spoolWP,
+                        forearmExitWP,
+                        carpalWP,
+                        knucklePalmarWP,
+                        f.markers.palmarProxA,
+                        f.markers.palmarProxB,
+                        f.markers.palmarInter,
+                        f.markers.palmarTip
+                    ],
+                    matTendonLine,
+                    0.58,
+                    28,
+                    8,
+                    true
+                );
+
+                // Build Dynamic Dorsal Snap-Fit Elastic Return Band (Palm Cross-Pin -> MCP -> Prox -> PIP -> Inter -> DIP -> Cuticle)
+                const dorsalPalmAnchorWP = makeMarker(
+                    parentNode,
+                    lx,
+                    ly - 6.0,
+                    lz - 5.3
+                );
+
+                createDynamicTendon(
+                    [
+                        dorsalPalmAnchorWP,
+                        f.markers.dorsalMCP,
+                        f.markers.dorsalProx,
+                        f.markers.dorsalPIP,
+                        f.markers.dorsalInter,
+                        f.markers.dorsalDIP,
+                        f.markers.dorsalTip
+                    ],
+                    matTendonExtensor,
+                    0.48,
+                    24,
+                    8,
+                    true
+                );
+
+                // Build Dynamic Interossei Abduction Tendon Line
+                const abdOriginWP = makeMarker(
+                    parentNode,
+                    lx * 0.62,
+                    cfg.ulnar ? (28 - ULNAR_PIVOT.y) : 28,
+                    cfg.ulnar ? (1.2 - ULNAR_PIVOT.z) : 1.2
+                );
+                const abdInsertWP = (name === 'index' || name === 'middle') ? f.markers.abdInsertL : f.markers.abdInsertR;
+                createDynamicTendon([abdOriginWP, abdInsertWP], matLigament, 0.40, 8, 6, false);
             }
 
             // =========================================================================
-            // CORRECTED THUMB HIERARCHY — Biomechanically Accurate
-            // Root cause fix: Old rotation (0.55, 0.45, -0.75) projected the thumb
-            // dorsally with pad facing away from fingers.
-            // New rotation (0.85, -0.35, 0.50):
-            //   X = +0.85 rad (+49°) -> Palmar abduction (out toward viewer +Z)
-            //   Y = -0.35 rad (-20°) -> Pronation (pad faces medially toward fingers)
-            //   Z = +0.50 rad (+29°) -> Radial abduction (clearance from index)
+            // 6. BIOMECHANICAL 3-JOINT THUMB (CMC Saddle -> Metacarpal -> MCP -> Proximal -> IP -> Distal)
             // =========================================================================
             const thumbBase = new THREE.Group();
-            thumbBase.position.set(-PALM_W * 0.36 - 2.5, PALM_L * 0.28, -2.0);
-            
-            // CORRECTED resting compound angle
-            thumbBase.rotation.set(0.85, -0.35, 0.50);
+            thumbBase.position.set(-27.0, 23.5, 3.8);
+            thumbBase.rotation.set(0.32, 0.65, 0.44);
 
-            // CMC Joint node (Opposition & Circumduction around compound axis)
+            // Sculpted CMC male pedestal collar on radial-palmar base
+            const cmcPedestalGeom = new THREE.CylinderGeometry(7.2, 8.6, 8, 20);
+            cmcPedestalGeom.translate(0, -2, 0);
+            thumbBase.add(new THREE.Mesh(cmcPedestalGeom, matChassis));
+
             const cmcNode = new THREE.Group();
             thumbBase.add(cmcNode);
 
-            // Proximal phalanx (Thumb Metacarpal equivalent)
-            const thP = buildOrganicPhalanx(32, 15.5, 13.5, 14, 12);
-            cmcNode.add(thP.group);
+            // 1st Metacarpal segment (len = 32)
+            const thMeta = buildOrganicPhalanx(32, 15.6, 13.6, 14.4, 12.6, false);
+            cmcNode.add(thMeta.group);
 
-            // MCP Joint node
+            // MCP Joint
             const mcpNode = new THREE.Group();
             mcpNode.position.y = 32;
-            thP.group.add(mcpNode);
+            thMeta.group.add(mcpNode);
 
-            // Distal phalanx (Fingertip)
-            const thD = buildOrganicPhalanx(26, 14, 12, 12, 10.5, true);
-            mcpNode.add(thD.group);
+            // Thumb Proximal Phalanx (len = 26)
+            const thProx = buildOrganicPhalanx(26, 14.4, 12.6, 13.0, 11.4, false);
+            mcpNode.add(thProx.group);
+
+            // IP Joint
+            const ipNode = new THREE.Group();
+            ipNode.position.y = 26;
+            thProx.group.add(ipNode);
+
+            // Thumb Distal Phalanx with 0.70 mm Recessed Fingernail Plate & Palmar Pulp (len = 22)
+            const thDist = buildOrganicPhalanx(22, 13.0, 11.4, 11.4, 10.2, true);
+            ipNode.add(thDist.group);
 
             palmGroup.add(thumbBase);
 
             thumbRigs = {
                 base: thumbBase,
+                basePos: thumbBase.position.clone(),
                 cmc: cmcNode,
                 mcp: mcpNode,
-                distal: thD.group
+                ip: ipNode,
+                distal: thDist.group
             };
+
+            // Dynamic Thumb Flexor Pollicis Longus Tendon (Servo[2] -> Forearm -> Thenar Port -> Metacarpal -> Proximal -> Distal Knot Pocket)
+            const thForearmExit = makeMarker(forearmGroup, -6.5, -2.0, 5.2);
+            const thCarpalPort  = makeMarker(palmGroup, -14.5, 11.0, 5.5);
+            const thThenarPort  = makeMarker(palmGroup, -22.5, 21.0, 7.2);
+            const thMetaPalmar  = makeMarker(thMeta.group, 0, 18, 5.2);
+            const thProxPalmar  = makeMarker(thProx.group, 0, 14, 4.6);
+            const thDistPalmar  = makeMarker(thDist.group, 0, 14, 3.8);
+
+            createDynamicTendon(
+                [servoUnits[2].spoolExit, thForearmExit, thCarpalPort, thThenarPort, thMetaPalmar, thProxPalmar, thDistPalmar],
+                matTendonLine,
+                0.62,
+                26,
+                8,
+                true
+            );
+
+            // Dynamic Thumb Opponens Tendon (Servo[4] -> Central Carpal Pulley -> 1st Metacarpal Radial Insertion)
+            const oppForearmExit = makeMarker(forearmGroup, -4.5, -2.0, 4.2);
+            const oppCarpalPulley = makeMarker(palmGroup, -6.0, 18.0, 6.2);
+            const oppMetaInsert = makeMarker(thMeta.group, 3.5, 26.0, 4.2);
+            createDynamicTendon(
+                [servoUnits[4].spoolExit, oppForearmExit, oppCarpalPulley, oppMetaInsert],
+                matTendonLine,
+                0.50,
+                16,
+                8,
+                true
+            );
+
+            // Dynamic Thumb Dorsal Snap-Fit Elastic Return Band
+            const thDorsalPalmAnchor = makeMarker(palmGroup, -26.5, 17.0, -3.5);
+            const thDorsalMeta = makeMarker(thMeta.group, 0, 17.0, -5.6);
+            const thDorsalMCP  = makeMarker(thProx.group, 0, 2.0, -5.4);
+            const thDorsalProx = makeMarker(thProx.group, 0, 15.0, -5.0);
+            const thDorsalIP   = makeMarker(thDist.group, 0, 2.0, -4.8);
+            const thDorsalTip  = makeMarker(thDist.group, 0, 12.0, -4.4);
+            createDynamicTendon(
+                [thDorsalPalmAnchor, thDorsalMeta, thDorsalMCP, thDorsalProx, thDorsalIP, thDorsalTip],
+                matTendonExtensor,
+                0.48,
+                22,
+                8,
+                true
+            );
+
+            // =========================================================================
+            // 7. PALMAR ARCH CUPPING TENDON & WRIST GIMBAL ANTAGONIST CABLES
+            // =========================================================================
+            const cupCarpalPulley = makeMarker(palmGroup, 2.0, 16.0, 5.4);
+            const cupHypoInsert   = makeMarker(ulnarPalmGroup, 21.0 - ULNAR_PIVOT.x, 38.0 - ULNAR_PIVOT.y, 5.2 - ULNAR_PIVOT.z);
+            createDynamicTendon(
+                [servoUnits[5].spoolExit, makeMarker(forearmGroup, 5.5, -2.0, 4.4), cupCarpalPulley, cupHypoInsert],
+                matLigament,
+                0.50,
+                14,
+                8,
+                true
+            );
+
+            // Wrist Gimbal Stabilizer Linkages (Forearm -> Carpal Collar across Wrist Joint)
+            createDynamicTendon(
+                [makeMarker(forearmGroup, -15.5, -12.0, -4.0), makeMarker(palmGroup, -14.5, 6.0, -3.5)],
+                matTendonExtensor,
+                0.65,
+                8,
+                8,
+                false
+            );
+            createDynamicTendon(
+                [makeMarker(forearmGroup, 15.5, -12.0, -4.0), makeMarker(palmGroup, 14.5, 6.0, -3.5)],
+                matTendonExtensor,
+                0.65,
+                8,
+                8,
+                false
+            );
         }
 
         function updateHand() {
@@ -784,6 +1279,7 @@
             const cupVal = parseFloat(document.getElementById('slider-palmar-cup').value) * rad;
             const wristP = parseFloat(document.getElementById('slider-wrist-pitch').value) * rad;
             const wristY = parseFloat(document.getElementById('slider-wrist-yaw').value) * rad;
+            const wristPron = parseFloat(document.getElementById('slider-wrist-pron').value) * rad;
 
             document.getElementById('val-th-opp').innerText = Math.round(thOppVal / rad) + '°';
             document.getElementById('val-th-flex').innerText = Math.round(thFlexVal / rad) + '°';
@@ -795,8 +1291,9 @@
             document.getElementById('val-palmar-cup').innerText = Math.round(cupVal / rad) + '°';
             document.getElementById('val-wrist-pitch').innerText = Math.round(wristP / rad) + '°';
             document.getElementById('val-wrist-yaw').innerText = Math.round(wristY / rad) + '°';
+            document.getElementById('val-wrist-pron').innerText = Math.round(wristPron / rad) + '°';
 
-            // Natural 4-finger flexion with independent MCP, PIP, and DIP curling
+            // 1. Natural 4-finger flexion (0° hard stop -> 95° palmar flexion toward +Z)
             function flexFinger(f, angle) {
                 f.pJoint.rotation.x = angle * 0.75;
                 f.iJoint.rotation.x = angle * 0.95;
@@ -805,56 +1302,78 @@
 
             if (fingers.index) {
                 flexFinger(fingers.index, idxVal);
-                fingers.index.root.rotation.z = 0.07 - abdVal * 1.0;
+                fingers.index.root.rotation.z = 0.07 + abdVal * 0.95;
             }
             if (fingers.middle) {
                 flexFinger(fingers.middle, midVal);
-                fingers.middle.root.rotation.z = 0.02 - abdVal * 0.25;
+                fingers.middle.root.rotation.z = 0.02 + abdVal * 0.22;
             }
             if (fingers.ring) {
                 flexFinger(fingers.ring, rngVal);
-                fingers.ring.root.rotation.z = -0.03 + abdVal * 0.55;
+                fingers.ring.root.rotation.z = -0.04 - abdVal * 0.55;
             }
             if (fingers.pinky) {
                 flexFinger(fingers.pinky, pnkVal);
-                fingers.pinky.root.rotation.z = -0.09 + abdVal * 1.25;
+                fingers.pinky.root.rotation.z = -0.10 - abdVal * 1.15;
             }
 
-            // Palmar Arch Cupping: 4th & 5th ray bowl deformation
+            // 2. Palmar Arch Cupping: 4th & 5th rays cup forward (+Z) & medially (-X) toward thenar eminence
             if (ulnarPalmGroup) {
-                ulnarPalmGroup.rotation.y = cupVal * 0.85;
-                ulnarPalmGroup.rotation.z = cupVal * 0.45;
+                ulnarPalmGroup.rotation.x = cupVal * 0.22;
+                ulnarPalmGroup.rotation.y = -cupVal * 0.85;
+                ulnarPalmGroup.rotation.z = cupVal * 0.16;
             }
 
-            // Wrist Interface: Pitch (Flexion/Extension) & Yaw (Deviation / Pronation)
+            // 3. Wrist Gimbal Articulation (Pitch, Yaw & Distal Pronation) while forearmGroup stays anchored
             if (wristGroup) {
                 wristGroup.rotation.x = wristP;
                 wristGroup.rotation.z = wristY;
+                wristGroup.rotation.y = wristPron;
             }
 
-            // Thumb 5-DoF Kinematics:
+            // 4. Thumb 3-Joint Kinematics (CMC Opposition/Circumduction + MCP + IP Flexion)
             if (thumbRigs.cmc) {
-                thumbRigs.cmc.rotation.z = -thOppVal * 0.70;
-                thumbRigs.cmc.rotation.y = -thOppVal * 0.40;
-                thumbRigs.cmc.rotation.x = thFlexVal * 0.35;
-                thumbRigs.mcp.rotation.x = thFlexVal * 0.75;
-                thumbRigs.distal.rotation.x = thFlexVal * 0.60;
+                thumbRigs.cmc.rotation.x = thOppVal * 0.14 + thFlexVal * 0.12;
+                thumbRigs.cmc.rotation.y = thOppVal * 0.26;
+                thumbRigs.cmc.rotation.z = -thOppVal * 0.23;
+                thumbRigs.mcp.rotation.x = thFlexVal * 0.48;
+                thumbRigs.ip.rotation.x  = thFlexVal * 0.46;
+            }
+
+            // 5. Dynamic Micro-Servo Winch Spool & Horn Rotation (proportional to 3.5 mm moment-arm tendon excursion)
+            if (servoUnits.length === 6) {
+                servoUnits[0].rotor.rotation.z =  idxVal * 1.65;
+                servoUnits[1].rotor.rotation.z = -midVal * 1.65;
+                servoUnits[2].rotor.rotation.z =  thFlexVal * 1.55;
+                servoUnits[3].rotor.rotation.z = -rngVal * 1.65;
+                servoUnits[4].rotor.rotation.z =  thOppVal * 1.50;
+                servoUnits[5].rotor.rotation.z = -(pnkVal * 1.50 + cupVal * 0.85);
+            }
+
+            // 6. Recompute World Matrices & Update All Dynamic Tendons and Dorsal Elastic Bands In-Place
+            if (scene) {
+                scene.updateMatrixWorld(true);
+                for (let i = 0; i < dynamicRoutes.length; i++) {
+                    updateDynamicTendon(dynamicRoutes[i]);
+                }
             }
         }
 
         function setPreset(name) {
-            document.querySelectorAll('.btn-grid button').forEach(b => b.classList.remove('active'));
-            const activeBtn = document.getElementById('btn-' + name);
-            if (activeBtn) activeBtn.classList.add('active');
+            ['open', 'fist', 'pinch', 'cylinder'].forEach(id => {
+                const btn = document.getElementById('btn-' + id);
+                if (btn) btn.classList.toggle('active', id === name);
+            });
 
             const presets = {
-                open:     { thOpp: 10, thFlex: 10, index: 14, middle: 16, ring: 18, pinky: 20, abd: 4, cup: 3, wp: 0, wy: 0 },
-                fist:     { thOpp: 55, thFlex: 65, index: 86, middle: 88, ring: 86, pinky: 82, abd: -4, cup: 22, wp: 18, wy: 4 },
-                pinch:    { thOpp: 46, thFlex: 42, index: 58, middle: 18, ring: 14, pinky: 12, abd: 0, cup: 6, wp: -8, wy: -6 },
-                cylinder: { thOpp: 32, thFlex: 48, index: 55, middle: 58, ring: 60, pinky: 62, abd: -2, cup: 16, wp: 10, wy: 2 }
+                open:     { thOpp: 12, thFlex: 10, index: 14, middle: 16, ring: 18, pinky: 20, abd:  4, cup:  4, wp:  0, wy:  0, wpr:  0 },
+                fist:     { thOpp: 58, thFlex: 72, index: 90, middle: 92, ring: 90, pinky: 88, abd: -3, cup: 24, wp: 14, wy:  4, wpr:  8 },
+                pinch:    { thOpp: 36, thFlex: 38, index: 68, middle: 20, ring: 16, pinky: 14, abd:  0, cup:  8, wp: -8, wy: -5, wpr: 10 },
+                cylinder: { thOpp: 34, thFlex: 46, index: 56, middle: 58, ring: 60, pinky: 62, abd: -2, cup: 18, wp:  8, wy:  2, wpr:  6 }
             };
 
             const p = presets[name];
+            if (!p) return;
             document.getElementById('slider-th-opp').value = p.thOpp;
             document.getElementById('slider-th-flex').value = p.thFlex;
             document.getElementById('slider-index').value = p.index;
@@ -865,10 +1384,11 @@
             document.getElementById('slider-palmar-cup').value = p.cup;
             document.getElementById('slider-wrist-pitch').value = p.wp;
             document.getElementById('slider-wrist-yaw').value = p.wy;
+            document.getElementById('slider-wrist-pron').value = p.wpr;
             updateHand();
         }
 
-                function toggleServos() {
+        function toggleServos() {
             showServos = !showServos;
             if (servoTendonGroup) servoTendonGroup.visible = showServos;
             document.getElementById('btn-servos').classList.toggle('active', showServos);
@@ -879,39 +1399,58 @@
             matChassis.wireframe = isWireframe;
             matBioBone.wireframe = isWireframe;
             matPulp.wireframe = isWireframe;
+            matNailBed.wireframe = isWireframe;
+            matNailPlate.wireframe = isWireframe;
             document.getElementById('btn-wire').classList.toggle('active', isWireframe);
         }
 
         function toggleExploded() {
             isExploded = !isExploded;
             document.getElementById('btn-explode').classList.toggle('active', isExploded);
-            
+
             const offset = isExploded ? 20 : 0;
-            fingers.index.root.position.y = (PALM_L - 2.5 - 2) + offset;
-            fingers.middle.root.position.y = (PALM_L - 2) + offset * 1.35;
-            fingers.ring.root.position.y = (PALM_L - 1.2 - 2) + offset;
-            fingers.pinky.root.position.y = (PALM_L - 3.8 - 2) + offset * 0.75;
-            thumbRigs.base.position.x = (-PALM_W * 0.36 - 2.5) - offset;
+            for (const f of Object.values(fingers)) {
+                f.root.position.y = f.basePos.y + offset * f.explodeMul;
+            }
+            if (thumbRigs.base) {
+                thumbRigs.base.position.x = thumbRigs.basePos.x - offset * 0.9;
+                thumbRigs.base.position.y = thumbRigs.basePos.y + offset * 0.35;
+            }
+            if (palmGroup) {
+                palmGroup.position.y = isExploded ? 14 : 0;
+            }
+            if (ulnarPalmGroup) {
+                ulnarPalmGroup.position.x = ULNAR_PIVOT.x + (isExploded ? 8 : 0);
+            }
+            updateHand();
         }
 
         function toggleTheme() {
             isBioLook = !isBioLook;
+            const btn = document.getElementById('btn-theme');
+            btn.classList.toggle('active', isBioLook);
+
             if (!isBioLook) {
                 matChassis.color.setHex(0x242e42);
                 matBioBone.color.setHex(0x334155);
                 matPulp.color.setHex(0x0284c7);
-                document.getElementById('btn-theme').innerText = "Prosthetic Tone";
+                matNailBed.color.setHex(0x1e293b);
+                matNailPlate.color.setHex(0x7dd3fc);
+                btn.innerText = 'Theme: Cyber Tone';
             } else {
-                matChassis.color.setHex(0xdfa07a);
+                matChassis.color.setHex(0xd99b78);
                 matBioBone.color.setHex(0xe8b595);
-                matPulp.color.setHex(0xe27d60);
-                document.getElementById('btn-theme').innerText = "Cyber Tone";
+                matPulp.color.setHex(0xdc7660);
+                matNailBed.color.setHex(0xc97b68);
+                matNailPlate.color.setHex(0xf7dcd4);
+                btn.innerText = 'Theme: Prosthetic Tone';
             }
         }
 
         function resetCamera() {
-            camera.position.set(-30, -190, 150);
-            controls.target.set(0, 42, 0);
+            camera.position.set(-42, -175, 175);
+            controls.target.set(0, 32, 8);
+            controls.update();
         }
 
         function onWindowResize() {
